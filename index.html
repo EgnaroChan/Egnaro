@@ -1,21 +1,80 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Egnaro Pages</title>
+  <style>
+    /* 1. 基本的页面重置和背景设置 */
+    body {
+      margin: 0; /* 移除浏览器默认的外边距 */
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* 使用现代、清晰的字体 */
+      background-color: #f4f7f6; /* 为页面设置一个柔和的背景色 */
+      color: #333; /* 设置默认字体颜色 */
+    }
+
+    /* 2. 使用 Flexbox 实现居中布局 */
+    body {
+      display: flex; /* 将 body 元素变为 Flexbox 容器 */
+      justify-content: center; /* 使其子元素（<main>）在主轴（水平方向）上居中 */
+      align-items: flex-start; /* 使其子元素在交叉轴（垂直方向）上从顶部开始对齐 */
+      min-height: 100vh; /* 确保 body 至少有视口（浏览器窗口）那么高 */
+    }
+
+    /* 3. 设计网页主容器的样式 */
+    main {
+      width: 90%; /* 在小屏幕上，宽度为父容器的90% */
+      max-width: 800px; /* 在大屏幕上，最大宽度不超过800px，防止内容过宽 */
+      margin-top: 40px; /* 与页面顶部留出一些空间 */
+      margin-bottom: 40px; /* 与页面底部留出一些空间 */
+      padding: 30px 40px; /* 在容器内部增加一些留白（内边距） */
+      background-color: #ffffff; /* 主体内容区域使用白色背景 */
+      border-radius: 10px; /* 添加圆角，使其看起来更柔和 */
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* 添加细微的阴影，营造立体感 */
+    }
+
+    /* 4. 美化标题和链接 */
+    h1, h2 {
+      border-bottom: 2px solid #eeeeee; /* 为标题添加下划线 */
+      padding-bottom: 10px; /* 增加下划线与文字的距离 */
+    }
+
+    ul {
+      list-style-type: none; /* 移除列表默认的圆点 */
+      padding-left: 0; /* 移除列表默认的左边距 */
+    }
+
+    li {
+      margin-bottom: 15px; /* 增加文章链接之间的间距 */
+    }
+
+    a {
+      text-decoration: none; /* 移除链接的下划线 */
+      color: #007bff; /* 设置链接颜色 */
+      font-weight: 500; /* 让链接文字稍粗一些 */
+      transition: color 0.3s ease; /* 添加颜色变化的过渡效果 */
+    }
+
+    a:hover {
+      color: #0056b3; /* 鼠标悬停时改变链接颜色 */
+      text-decoration: underline; /* 鼠标悬停时显示下划线 */
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome！</h1>
-  <p>This is Egnaro's page.</p>
+
+  <!-- 将所有网页内容包裹在一个 <main> 标签内 -->
+  <main>
+    <h1>Welcome！</h1>
+    <p>This is Egnaro's page.</p>
+
+    <h2>文章列表</h2>
+    <ul>
+      <li><a href="_posts/what_are_diffusion_models?.html">What are diffusion models?</a></li>
+      <li><a href="DDPM论文解析.html">DDPM论文解析</a></li>
+      <!-- 您可以在这里添加更多文章 -->
+    </ul>
+  </main>
+
 </body>
 </html>
-<h2>文章列表</h2>
-<ul>
-  <li><a href="_posts/what_are_diffusion_models?.html">What are diffusion models?</a></li>
-</ul>
-
-</html>
-<h2>文章列表</h2>
-<ul>
-  <li><a href="DDPM论文解析.html">DDPM论文解析</a></li>
-</ul>
