@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DDPM论文解析</title>
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -12,6 +24,7 @@
       font-family: Georgia, "Times New Roman", "Songti SC", "STSong", serif;
       line-height: 1.65;
     }
+
     main {
       width: min(92%, 1100px);
       margin: 36px auto;
@@ -21,16 +34,20 @@
       border-radius: 10px;
       box-shadow: 0 4px 15px rgba(0,0,0,.08);
     }
+
     .back {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: .95rem;
       margin-bottom: 1.4rem;
     }
+
     a {
       color: #0645d8;
       text-decoration: none;
     }
+
     a:hover { text-decoration: underline; }
+
     #article h1 {
       margin: 0 0 28px;
       font-size: 2.25rem;
@@ -39,87 +56,118 @@
       font-family: Georgia, "Times New Roman", "Songti SC", "STSong", serif;
       font-weight: 700;
     }
+
     #article h2 {
       margin: 2.4rem 0 1rem;
       font-size: 1.65rem;
       color: #111;
       font-family: Georgia, "Times New Roman", "Songti SC", "STSong", serif;
     }
+
     #article h3 {
       margin: 1.8rem 0 .8rem;
       font-size: 1.28rem;
       color: #111;
       font-family: Georgia, "Times New Roman", "Songti SC", "STSong", serif;
     }
-    #article h4, #article h5, #article h6 {
+
+    #article h4,
+    #article h5,
+    #article h6 {
       color: #111;
       font-family: Georgia, "Times New Roman", "Songti SC", "STSong", serif;
     }
-    #article p, #article li {
+
+    #article p,
+    #article li {
       font-size: 1.18rem;
       color: #111;
     }
-    #article p { margin: 1.1rem 0; }
-    #article span, #article strong, #article b, #article em {
+
+    #article p {
+      margin: 1.1rem 0;
+    }
+
+    #article span,
+    #article strong,
+    #article b,
+    #article em {
       color: inherit;
     }
-    #article ul, #article ol {
+
+    #article ul,
+    #article ol {
       padding-left: 2rem;
     }
+
     #article blockquote {
       margin: 1.3rem 0;
       padding-left: 1.2rem;
       border-left: 3px solid #ddd;
       color: #444;
     }
-    #article mjx-container {
-      color: #111 !important;
+
+    .equation-block {
+      margin: 1.35rem 0;
       overflow-x: auto;
       overflow-y: hidden;
+      text-align: center;
+    }
+
+    mjx-container {
+      color: #111 !important;
       max-width: 100%;
     }
-    #article mjx-container[display="true"] {
-      margin: 1.35rem 0 !important;
+
+    mjx-container[display="true"] {
+      overflow-x: auto;
+      overflow-y: hidden;
       padding: .35rem 0;
+      margin: 1.35rem 0 !important;
     }
-    #article mjx-container svg {
-      max-width: 100%;
-    }
-    #article script[type="math/tex"] {
-      display: none !important;
-    }
+
     #article table {
       border-collapse: collapse;
       width: 100%;
       margin: 1.3rem 0;
     }
-    #article th, #article td {
+
+    #article th,
+    #article td {
       border: 1px solid #ddd;
       padding: .55rem .7rem;
       color: #111;
     }
-    #article pre, #article code {
+
+    #article pre,
+    #article code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
+
     #article pre {
       overflow-x: auto;
       padding: 1rem;
       background: #f6f8fa;
       border-radius: 6px;
     }
-    .loading, .error {
+
+    .loading,
+    .error {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #555;
     }
+
     @media (max-width: 700px) {
       main {
         width: 96%;
         margin: 14px auto;
         padding: 24px 18px 36px;
       }
+
       #article h1 { font-size: 1.65rem; }
       #article h2 { font-size: 1.4rem; }
-      #article p, #article li { font-size: 1.03rem; }
+      #article p,
+      #article li { font-size: 1.03rem; }
     }
   </style>
 </head>
@@ -128,7 +176,60 @@
   <div class="back"><a href="index.html">← Back to home</a></div>
   <div id="article"><p class="loading">Loading...</p></div>
 </main>
+
 <script>
+  function cleanAndRestoreMath(source) {
+    const mathScripts = Array.from(source.querySelectorAll('script[type="math/tex"]'));
+
+    mathScripts.forEach(script => {
+      const tex = script.textContent.trim();
+      const parent = script.parentElement;
+      const oldMath = script.previousElementSibling &&
+                      script.previousElementSibling.tagName.toLowerCase() === 'mjx-container'
+                      ? script.previousElementSibling
+                      : null;
+
+      if (oldMath) oldMath.remove();
+
+      const meaningfulNodes = Array.from(parent.childNodes).filter(node => {
+        if (node === script) return false;
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent.trim().length > 0;
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          if (node.tagName.toLowerCase() === 'br') return false;
+          return node.textContent.trim().length > 0 || ['IMG', 'A'].includes(node.tagName);
+        }
+        return false;
+      });
+
+      const tag = parent.tagName.toLowerCase();
+
+      if ((tag === 'h2' || tag === 'h3') && meaningfulNodes.length > 0) {
+        const equation = document.createElement('div');
+        equation.className = 'equation-block';
+        equation.textContent = `\\[${tex}\\]`;
+        script.remove();
+        parent.insertAdjacentElement('afterend', equation);
+      } else if (tag === 'p' && meaningfulNodes.length === 0) {
+        parent.textContent = `\\[${tex}\\]`;
+      } else {
+        const inline = document.createTextNode(`\\(${tex}\\)`);
+        script.replaceWith(inline);
+      }
+    });
+
+    source.querySelectorAll('mjx-container').forEach(node => node.remove());
+    source.querySelectorAll('mjx-assistive-mml').forEach(node => node.remove());
+  }
+
+  function typesetArticle() {
+    const article = document.getElementById('article');
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise([article]);
+    } else {
+      setTimeout(typesetArticle, 80);
+    }
+  }
+
   fetch('DDPM论文解析.html')
     .then(response => {
       if (!response.ok) throw new Error('Failed to load article source.');
@@ -138,9 +239,14 @@
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const source = doc.querySelector('#write');
       if (!source) throw new Error('Article body not found.');
-      document.getElementById('article').innerHTML = source.innerHTML;
+
+      cleanAndRestoreMath(source);
+
+      const article = document.getElementById('article');
+      article.innerHTML = source.innerHTML;
+      typesetArticle();
     })
-    .catch(error => {
+    .catch(() => {
       document.getElementById('article').innerHTML =
         '<p class="error">The article could not be loaded. <a href="DDPM论文解析.html">Open the original page.</a></p>';
     });
