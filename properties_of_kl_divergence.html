@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Properties of KL Divergence</title>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #f4f7f6;
+      color: #111;
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.65;
+    }
+    main {
+      width: min(92%, 1100px);
+      margin: 36px auto;
+      padding: 42px 52px 56px;
+      box-sizing: border-box;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.08);
+    }
+    h1 {
+      margin: 0 0 28px;
+      font-size: 2.25rem;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .section-number {
+      margin-right: 1.1rem;
+    }
+    p {
+      font-size: 1.18rem;
+      margin: 1.1rem 0;
+    }
+    .statement {
+      font-style: italic;
+      font-size: 1.2rem;
+    }
+    .statement strong {
+      font-style: normal;
+    }
+    .proof-label {
+      font-style: italic;
+      font-weight: bold;
+    }
+    .result {
+      margin-top: 2.4rem;
+    }
+    .qed {
+      text-align: right;
+      font-size: 1.5rem;
+      line-height: 1;
+      margin-top: .3rem;
+    }
+    .back {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: .95rem;
+      margin-bottom: 1.4rem;
+    }
+    a {
+      color: #0645d8;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    mjx-container[display="true"] {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: .35rem 0;
+      margin: 1.35rem 0 !important;
+    }
+    @media (max-width: 700px) {
+      main {
+        width: 96%;
+        margin: 14px auto;
+        padding: 24px 18px 36px;
+      }
+      h1 { font-size: 1.65rem; }
+      p, .statement { font-size: 1.03rem; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="back"><a href="index.html">← Back to home</a></div>
+
+  <h1><span class="section-number">A.1.1</span> Properties of KL Divergence</h1>
+
+  <p>Recall for \(p,q \in \Delta^{|\mathcal{X}|}\) for \(\mathcal{X}\) some finite set, we define</p>
+
+  \[
+  D_{KL}(p\|q) := \sum_{x\in\mathcal{X}} p(x)\log\left(\frac{p(x)}{q(x)}\right)
+  \]
+
+  <p>when \(p(x)=0\) for every \(x\in\mathcal{X}\) such that \(q(x)=0\) and \(+\infty\) otherwise. Also recall that for \(x\) such that \(p(x)=0\), we interpret \(0\log(0)=0\). Here we will recall some basic properties of \(D_{KL}\) that will aid in our proof.</p>
+
+  <div class="result" id="lemma-a1">
+    <p class="statement"><strong>Lemma A.1.</strong> Non-negativity of KL-Divergence: For any \(p,q\) distributions on a finite set \(\mathcal{X}\),</p>
+
+    \[
+    D_{KL}(p\|q) \ge 0,
+    \]
+
+    <p class="statement">with \(D_{KL}(p\|q)=0\) if and only if \(p=q\).</p>
+
+    <p><span class="proof-label">Proof.</span> First we observe that that \(g:[0,\infty)\to\mathbb{R}\) given by \(g(t)=t\log(t)-t+1\) has \(g'(t)=\log(t)\), \(g'(t)&lt;0\) for \(t\in(0,1)\) and \(g'(t)&gt;0\) for \(t&gt;1\), so \(g\) has a global minimum of 0 at \(t=1\). Then:</p>
+
+    \[
+    \begin{aligned}
+    D_{KL}(p\|q)
+      &= \sum_{x\in\mathcal{X}} p(x)\log\left(\frac{p(x)}{q(x)}\right) \\
+      &= \sum_{x\in\mathcal{X}} q(x)\frac{p(x)}{q(x)}\log\left(\frac{p(x)}{q(x)}\right)+1-1 \\
+      &= \sum_{x\in\mathcal{X}} q(x)\frac{p(x)}{q(x)}\log\left(\frac{p(x)}{q(x)}\right)
+         +\sum_{x\in\mathcal{X}}q(x)-\sum_{x\in\mathcal{X}}p(x) \\
+      &= \sum_{x\in\mathcal{X}} q(x)\left(\frac{p(x)}{q(x)}\log\left(\frac{p(x)}{q(x)}\right)-\frac{p(x)}{q(x)}+1\right) \\
+      &= \sum_{x\in\mathcal{X}} q(x)g\left(\frac{p(x)}{q(x)}\right) \\
+      &\ge \sum_{x\in\mathcal{X}} q(x)*0,
+    \end{aligned}
+    \]
+
+    <p>with equality holding if and only if \(q(x)=p(x), \forall x\in\mathcal{X}\).</p>
+    <div class="qed">□</div>
+  </div>
+
+  <div class="result" id="lemma-a2">
+    <p class="statement"><strong>Lemma A.2.</strong> Chain Rule for KL Divergence between Joint Law of 2 Discrete Random Variables:</p>
+
+    <p class="statement">For \(p,q\) distributions on \(\mathcal{X}\times\mathcal{Y}\), where \(\mathcal{X}\) and \(\mathcal{Y}\) are finite sets, denoting by \(p_{\mathcal{X}},q_{\mathcal{X}}\) the \(\mathcal{X}\) marginals of \(p\) and \(q\) respectively and by \(p_{\mathcal{Y}|\mathcal{X}}(y|x)=\frac{p(x,y)}{p_{\mathcal{X}}(x)}\) and similarly for \(q_{\mathcal{Y}|\mathcal{X}}(y|x)\):</p>
+
+    \[
+    D_{KL}(p\|q)=D_{KL}(p_{\mathcal{X}}\|q_{\mathcal{X}})
+    +\mathbb{E}_{x\sim p_{\mathcal{X}}}\left[D_{KL}\left(p_{\mathcal{Y}|\mathcal{X}}(\cdot|x)\|q_{\mathcal{Y}|\mathcal{X}}(\cdot|x)\right)\right].
+    \]
+
+    <p><span class="proof-label">Proof.</span> By definition:</p>
+
+    \[
+    \begin{aligned}
+    D_{KL}(p\|q)
+      &= \sum_{(x,y)\in\mathcal{X}\times\mathcal{Y}} p(x,y)\log\left(\frac{p(x,y)}{q(x,y)}\right) \\
+      &= \sum_{(x,y)\in\mathcal{X}\times\mathcal{Y}} p(x,y)\log\left(
+         \frac{p_{\mathcal{Y}|\mathcal{X}}(y|x)p_{\mathcal{X}}(x)}
+              {q_{\mathcal{Y}|\mathcal{X}}(y|x)q_{\mathcal{X}}(x)}
+         \right) \\
+      &= \sum_{(x,y)\in\mathcal{X}\times\mathcal{Y}} p(x,y)\log\left(\frac{p_{\mathcal{X}}(x)}{q_{\mathcal{X}}(x)}\right)
+         +\sum_{(x,y)\in\mathcal{X}\times\mathcal{Y}} p(x,y)\log\left(\frac{p_{\mathcal{Y}|\mathcal{X}}(y|x)}{q_{\mathcal{Y}|\mathcal{X}}(y|x)}\right) \\
+      &= \sum_{x\in\mathcal{X}} p_{\mathcal{X}}(x)\log\left(\frac{p_{\mathcal{X}}(x)}{q_{\mathcal{X}}(x)}\right)
+         +\sum_{x\in\mathcal{X}}p_{\mathcal{X}}(x)\sum_{y\in\mathcal{Y}}p_{\mathcal{Y}|\mathcal{X}}(y|x)
+         \log\left(\frac{p_{\mathcal{Y}|\mathcal{X}}(y|x)}{q_{\mathcal{Y}|\mathcal{X}}(y|x)}\right) \\
+      &= D_{KL}(p_{\mathcal{X}}\|q_{\mathcal{X}})
+         +\sum_{x\in\mathcal{X}}p_{\mathcal{X}}(x)D_{KL}\left(p_{\mathcal{Y}|\mathcal{X}}(\cdot|x)\|q_{\mathcal{Y}|\mathcal{X}}(\cdot|x)\right) \\
+      &= D_{KL}(p_{\mathcal{X}}\|q_{\mathcal{X}})
+         +\mathbb{E}_{x\sim p_{\mathcal{X}}}\left[D_{KL}\left(p_{\mathcal{Y}|\mathcal{X}}(\cdot|x)\|q_{\mathcal{Y}|\mathcal{X}}(\cdot|x)\right)\right].
+    \end{aligned}
+    \]
+    <div class="qed">□</div>
+  </div>
+
+  <div class="result" id="corollary-a3">
+    <p class="statement"><strong>Corollary A.3.</strong> Chain Rule for KL Divergence between Joint Law of N Discrete Random Variables:</p>
+
+    <p class="statement">For \(N\in\mathbb{N}\) and \(p,q\) distributions on \(\mathcal{X}_0\times\mathcal{X}_1\times\cdots\mathcal{X}_N\) where \(\mathcal{X}_0,\ldots,\mathcal{X}_N\) are finite sets, denoting for \(k\in\{0,1,\ldots,N\}\) \(p_{0:k}\) the \(\mathcal{X}_0\times\cdots\times\mathcal{X}_k\) marginal of \(p\) and similarly for \(q_{0:k}\), and by \(p_{k+1|0:k}(x_{k+1}|x_0,\ldots,x_k)=\frac{p_{k+1}(x_0,\ldots,x_k,x_{k+1})}{p_k(x_0,\ldots,x_k)}\) for \(x_i\in\mathcal{X}_i,i=0,1,\ldots,k\) and similarly for \(q_{k+1|0:k}\), we have:</p>
+
+    \[
+    \begin{aligned}
+    D_{KL}(p\|q)
+      &= D_{KL}(p_0\|q_0) \\
+      &\quad + \sum_{k=0}^{N-1}
+      \mathbb{E}_{(x_0,x_1,\ldots,x_k)\sim p_{0:k}}
+      \left[
+      D_{KL}\left(
+      p_{k+1|0:k}(\cdot|x_0,\ldots,x_k)
+      \|q_{k+1|0:k}(\cdot|x_0,\ldots,x_k)
+      \right)
+      \right].
+    \end{aligned}
+    \]
+
+    <p><span class="proof-label">Proof.</span> This follows from iteratively applying Lemma <a href="#lemma-a2">A.2</a>.</p>
+    <div class="qed">□</div>
+  </div>
+
+  <div class="result" id="corollary-a4">
+    <p class="statement"><strong>Corollary A.4.</strong> Inequality for Marginalization of Discrete Distributions:</p>
+
+    <p class="statement">For \(p,q\) distributions on \(\mathcal{X}\times\mathcal{Y}\), where \(\mathcal{X}\) and \(\mathcal{Y}\) are finite sets, denoting by \(p_{\mathcal{X}},q_{\mathcal{X}}\) the \(\mathcal{X}\) marginals of \(p\) and \(q\) respectively:</p>
+
+    \[
+    D_{KL}(p\|q) \ge D_{KL}(p_{\mathcal{X}}\|q_{\mathcal{X}})
+    \]
+
+    <p><span class="proof-label">Proof.</span> This follows from Lemma <a href="#lemma-a2">A.2</a> via noting that the term inside the expectation is non-negative for each \(y\) via Lemma <a href="#lemma-a1">A.1</a>.</p>
+    <div class="qed">□</div>
+  </div>
+</main>
+</body>
+</html>
