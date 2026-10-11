@@ -10,22 +10,22 @@
 对于定义在同一离散样本空间 $\mathcal X$ 上的两个概率分布 $P$ 和 $Q$：
 
 $$
-\boxed{
+
 D_{\mathrm{KL}}(P\|Q)
 =
 \sum_{x\in\mathcal X}P(x)\log\frac{P(x)}{Q(x)}
-}
+
 $$
 
 等价的期望形式：
 
 $$
-\boxed{
+
 D_{\mathrm{KL}}(P\|Q)
 =
 \mathbb E_{x\sim P}
 \left[\log\frac{P(x)}{Q(x)}\right]
-}
+
 $$
 
 如果 $P$ 和 $Q$ 具有相对于同一测度的概率密度 $p(x)$ 和 $q(x)$，那么：
@@ -61,7 +61,7 @@ $$
 \begin{aligned}
 \mathbb E_{x\sim P}[L_Q(x)-L_P(x)]
 &=\mathbb E_{x\sim P}\left[-\log Q(x)+\log P(x)\right]\\
-&=\boxed{D_{\mathrm{KL}}(P\|Q)}.
+&=D_{\mathrm{KL}}(P\|Q).
 \end{aligned}
 $$
 
@@ -88,7 +88,7 @@ $$
 D_{\mathrm{KL}}(P\|Q)
 &=0.5\log\frac{0.5}{0.75}
 +0.5\log\frac{0.5}{0.25}\\
-&\approx \boxed{0.1438}.
+&\approx 0.1438.
 \end{aligned}
 $$
 
@@ -99,7 +99,7 @@ $$
 D_{\mathrm{KL}}(Q\|P)
 &=0.75\log\frac{0.75}{0.5}
 +0.25\log\frac{0.25}{0.5}\\
-&\approx \boxed{0.1308}.
+&\approx 0.1308.
 \end{aligned}
 $$
 
@@ -116,7 +116,7 @@ $$
 ### 4.1 非负性
 
 $$
-\boxed{D_{\mathrm{KL}}(P\|Q)\ge 0}
+D_{\mathrm{KL}}(P\|Q)\ge 0
 $$
 
 等号成立当且仅当 $P=Q$（概率分布意义下；密度相等是几乎处处的）。
@@ -155,4 +155,4 @@ $$
 4. **最大似然估计：**理解为什么拟合数据分布可以写成 KL 最小化。
 5. **ELBO 与扩散模型：**理解路径分布的 KL、链式法则及训练目标。
 
-进一步的严格证明见已有笔记：[Properties of KL Divergence](properties_of_kl_divergence.html)；返回[文章列表](index.html)。
+进一步的严格证明见已有笔记：[Properties of KL Divergence](https://egnarochan.github.io/Egnaro/properties_of_kl_divergence.html)；返回[文章列表](https://egnarochan.github.io/Egnaro/index.html)。
