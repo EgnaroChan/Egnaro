@@ -410,3 +410,294 @@ P(x_t\mid x_{0:t-1})
 $$
 
 **关键点：逐步 KL 的期望由整个轨迹 KL 的第一个分布 $P$ 决定。**如果训练使用的状态分布与推理时实际到达的状态分布不同，逐步优化与目标轨迹分布之间的关系就必须重新分析。
+
+
+## 10. KL 散度与变分推断：ELBO
+
+在潜变量模型中，我们希望最大化观测 $x$ 的对数似然：
+
+$$
+\log p_\theta(x)=\log\int p_\theta(x,z)\,dz.
+$$
+
+引入辅助分布 $q_\phi(z\mid x)$，假设下面的概率比值定义良好。乘除 $q_\phi(z\mid x)$：
+
+$$
+\begin{aligned}
+\log p_\theta(x)
+&=\log
+\mathbb{E}_{z\sim q_\phi(z\mid x)}
+\left[
+\frac{p_\theta(x,z)}
+{q_\phi(z\mid x)}
+\right]\\
+&\geq
+\mathbb{E}_{z\sim q_\phi(z\mid x)}
+\left[
+\log\frac{p_\theta(x,z)}
+{q_\phi(z\mid x)}
+\right].
+\end{aligned}
+$$
+
+这里的不等式来自**对数函数的凹性和 Jensen 不等式**。右侧称为 Evidence Lower Bound（ELBO）：
+
+$$
+\mathrm{ELBO}(\theta,\phi;x)
+:=
+\mathbb{E}_{q_\phi(z\mid x)}
+\left[
+\log p_\theta(x,z)-\log q_\phi(z\mid x)
+\right].
+$$
+
+### 10.1 ELBO 与真实对数似然相差多少？
+
+Bayes 公式告诉我们：
+
+$$
+p_\theta(z\mid x)
+=
+\frac{p_\theta(x,z)}{p_\theta(x)}.
+$$
+
+代入后验 KL 的定义：
+
+$$
+\begin{aligned}
+&D_{\mathrm{KL}}\left(q_\phi(z\mid x)\|p_\theta(z\mid x)\right)\\
+&=\mathbb{E}_{q_\phi}
+\left[
+\log q_\phi(z\mid x)-\log p_\theta(x,z)
++\log p_\theta(x)
+\right]\\
+&=\log p_\theta(x)-\mathrm{ELBO}(\theta,\phi;x).
+\end{aligned}
+$$
+
+因此得到**精确恒等式**：
+
+$$
+\log p_\theta(x)
+=
+\mathrm{ELBO}(\theta,\phi;x)
++
+D_{\mathrm{KL}}\left(
+q_\phi(z\mid x)\|p_\theta(z\mid x)
+\right).
+$$
+
+由于 KL 非负，ELBO 一定不大于真实对数似然。并且，**下界的松弛程度恰好等于近似后验与真实后验之间的 KL**。当近似后验等于真实后验时，ELBO 就成为精确的对数似然。
+
+### 10.2 常见的“重建项 − KL 项”
+
+如果潜变量模型分解为：
+
+$$
+p_\theta(x,z)=p(z)p_\theta(x\mid z),
+$$
+
+那么 ELBO 可以写成：
+
+$$
+\mathrm{ELBO}
+=
+\mathbb{E}_{q_\phi(z\mid x)}
+[\log p_\theta(x\mid z)]
+-
+D_{\mathrm{KL}}\left(q_\phi(z\mid x)\|p(z)\right).
+$$
+
+这是 VAE 中常见的形式：重建对数似然减去先验正则化项。
+
+请区分两种 KL：
+
+- $D_{\mathrm{KL}}(q_\phi(z\mid x)\|p_\theta(z\mid x))$ 衡量 **ELBO 与真实对数似然的差距**。
+- $D_{\mathrm{KL}}(q_\phi(z\mid x)\|p(z))$ 是 **ELBO 分解中出现的先验正则化项**。
+
+二者通常不是同一个量。
+
+## 11. KL 在扩散模型中的作用
+
+### 11.1 前向过程与反向生成过程
+
+标准离散时间扩散模型先定义固定的前向加噪过程：
+
+$$
+q(x_{1:T}\mid x_0)
+=
+\prod_{t=1}^{T}q(x_t\mid x_{t-1}),
+$$
+
+其中 $x_0$ 是真实数据，$x_T$ 是最终加噪状态。
+
+反向模型从先验 $p(x_T)$ 开始生成：
+
+$$
+p_\theta(x_{0:T})
+=
+p(x_T)
+\prod_{t=1}^{T}p_\theta(x_{t-1}\mid x_t).
+$$
+
+固定观测 $x_0$，利用前向轨迹分布作为 ELBO 中的变分分布：
+
+$$
+\begin{aligned}
+-\log p_\theta(x_0)
+&\leq
+\mathbb{E}_{q(x_{1:T}\mid x_0)}
+\left[
+\log\frac{q(x_{1:T}\mid x_0)}
+{p_\theta(x_{0:T})}
+\right]\\
+&=:\mathcal{L}_{\mathrm{VLB}}(x_0).
+\end{aligned}
+$$
+
+**注意方向：**ELBO 是 $\log p_\theta(x_0)$ 的下界；其负号 $\mathcal{L}_{\mathrm{VLB}}$ 是负对数似然 $-\log p_\theta(x_0)$ 的上界。
+
+### 11.2 为什么训练目标包含逐步 KL？
+
+由于前向过程具有 Markov 性，给定 $x_0$ 后也能使用反向条件概率分解：
+
+$$
+q(x_{1:T}\mid x_0)
+=
+q(x_T\mid x_0)
+\prod_{t=2}^{T}q(x_{t-1}\mid x_t,x_0).
+$$
+
+将它代入上一节的 $\mathcal{L}_{\mathrm{VLB}}$，并使用对数乘积等于对数求和：
+
+$$
+\begin{aligned}
+\mathcal{L}_{\mathrm{VLB}}(x_0)
+&=
+D_{\mathrm{KL}}\left(
+q(x_T\mid x_0)\|p(x_T)
+\right)\\
+&\quad+
+\sum_{t=2}^{T}
+\mathbb{E}_{x_t\sim q(x_t\mid x_0)}
+\left[
+D_{\mathrm{KL}}\left(
+q(x_{t-1}\mid x_t,x_0)
+\|
+p_\theta(x_{t-1}\mid x_t)
+\right)
+\right]\\
+&\quad-
+\mathbb{E}_{x_1\sim q(x_1\mid x_0)}
+\left[\log p_\theta(x_0\mid x_1)\right].
+\end{aligned}
+$$
+
+这一分解包含三种类型的项：
+
+1. **先验匹配项**：使前向过程的末态分布接近先验。
+2. **逐步反向 KL 项**：让模型学到正确的反向转移。
+3. **重建项**：从接近数据的状态 $x_1$ 预测原始数据 $x_0$。
+
+特别重要的是：这里的参考分布 $q(x_{t-1}\mid x_t,x_0)$ **不是任意指定的目标**，而是根据已经定义的前向加噪过程，通过条件概率得到的后验。
+
+### 11.3 与 Masked Diffusion Model 的联系
+
+Masked diffusion model（MDM）也通常从一个明确的前向遮罩过程出发，构造对应的反向生成模型。因此可以推导与反向预测有关的变分训练目标；在特定参数化与时间权重选择下，某些项能够化为**加权交叉熵**。
+
+但要注意：**采用交叉熵形式的 loss，不代表它自动等于某个精确 ELBO。** 必须检查前向过程、反向转移、时间采样权重及模型参数化是否与推导中的概率分布一一对应。
+
+## 12. 序列模型与可编辑生成过程
+
+### 12.1 自回归训练对应哪个 KL？
+
+对一个长度为 $T$ 的序列，目标分布 $P$ 和模型分布 $Q_\theta$ 都可以根据前缀做链式分解：
+
+$$
+P(x_{1:T})=\prod_{t=1}^{T}P(x_t\mid x_{<t}),
+\qquad
+Q_\theta(x_{1:T})=\prod_{t=1}^{T}Q_\theta(x_t\mid x_{<t}).
+$$
+
+根据第 9 节的链式法则：
+
+$$
+\begin{aligned}
+&D_{\mathrm{KL}}(P(x_{1:T})\|Q_\theta(x_{1:T}))\\
+&=
+\sum_{t=1}^{T}
+\mathbb{E}_{x_{<t}\sim P}
+\left[
+D_{\mathrm{KL}}\left(
+P(x_t\mid x_{<t})
+\|
+Q_\theta(x_t\mid x_{<t})
+\right)
+\right].
+\end{aligned}
+$$
+
+这说明：**在真实数据前缀上训练下一 token 的对数似然，可以对应到序列分布上的 Forward KL。** 式中的期望是对真实前缀分布取的，而模型推理时可能到达不同的前缀。
+
+### 12.2 最终分布与完整轨迹分布
+
+对于能够反复修改已生成位置的过程，至少存在两种不同的分布：
+
+- **最终输出分布** $P_\theta(x)$：最终生成了什么。
+- **轨迹分布** $P_\theta(\tau)$：经历哪些中间状态与修改步骤。
+
+如果最终结果是轨迹的确定映射 $x=f(\tau)$，那么对于任意两个轨迹分布 $P(\tau)$、$Q(\tau)$，由数据处理不等式：
+
+$$
+D_{\mathrm{KL}}(P(\tau)\|Q(\tau))
+\geq
+D_{\mathrm{KL}}(P(x)\|Q(x)).
+$$
+
+因此，**匹配完整轨迹分布通常比只匹配最终输出分布要求更强**。反过来，仅仅匹配最终分布，也不意味着中间轨迹一定匹配。
+
+当模型没有显式定义可计算的前向过程时，就不能直接把标准扩散模型中的 $q(x_{t-1}\mid x_t,x_0)$ 搬来当作参考过程。必须先明确目标是**最终似然、似然的可计算下界，还是轨迹层面的替代目标**。
+
+## 13. 重要公式回顾
+
+**KL 与交叉熵：**
+
+$$
+D_{\mathrm{KL}}(P\|Q)=H(P,Q)-H(P).
+$$
+
+**MLE 与 Forward KL：**
+
+$$
+\min_\theta D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta)
+\quad\Longleftrightarrow\quad
+\max_\theta \mathbb{E}_{p_{\mathrm{data}}}\log p_\theta(x).
+$$
+
+**ELBO 与真实似然：**
+
+$$
+\log p_\theta(x)-\mathrm{ELBO}
+=
+D_{\mathrm{KL}}\left(
+q_\phi(z\mid x)\|p_\theta(z\mid x)
+\right).
+$$
+
+**KL 的链式法则：**
+
+$$
+\begin{aligned}
+D_{\mathrm{KL}}(P(X,Y)\|Q(X,Y))
+&=D_{\mathrm{KL}}(P(X)\|Q(X))\\
+&\quad+
+\mathbb{E}_{x\sim P(X)}
+D_{\mathrm{KL}}\left(
+P(Y\mid x)\|Q(Y\mid x)
+\right).
+\end{aligned}
+$$
+
+这几个等式把 KL 的信息论意义、统计学习、变分推断与扩散模型联系了起来。
+
+更严格的性质与证明见旧笔记 [Properties of KL Divergence](https://egnarochan.github.io/Egnaro/properties_of_kl_divergence.html)。返回 [文章列表](https://egnarochan.github.io/Egnaro/index.html)。
