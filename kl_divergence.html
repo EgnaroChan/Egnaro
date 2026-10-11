@@ -1,99 +1,262 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KL Divergence — Introduction</title>
-<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script>
-<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-<style>
-body{margin:0;background:#f4f7f6;color:#111;font-family:Georgia,"Times New Roman",serif;line-height:1.7}
-main{width:min(92%,1100px);margin:36px auto;padding:42px 52px 56px;box-sizing:border-box;background:#fff;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
-h1{margin:0 0 12px;font-size:2.25rem}h2{margin-top:2.4rem;border-bottom:1px solid #e5e5e5;padding-bottom:.4rem}h3{margin-top:1.8rem}p,li{font-size:1.18rem}p{margin:1.1rem 0}.back,.meta{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:.95rem;color:#555}.back{margin-bottom:1.4rem}.meta{margin-bottom:2rem}a{color:#0645d8;text-decoration:none}a:hover{text-decoration:underline}mjx-container[display="true"]{overflow-x:auto;overflow-y:hidden;padding:.35rem 0;margin:1.35rem 0!important}ul,ol{padding-left:1.8rem}li{margin:.4rem 0}.key{border-left:3px solid #d2dce9;padding:.35rem 1rem;background:#f8fafc}
-@media(max-width:700px){main{width:96%;margin:14px auto;padding:24px 18px 36px}h1{font-size:1.65rem}p,li{font-size:1.03rem}}
-</style>
-</head><body><main>
-<div class="back"><a href="index.html">← Back to home</a></div>
-<h1>KL Divergence（KL 散度）</h1>
-<div class="meta">学习笔记 · 第一部分：定义、直觉与基本性质 · <a href="kl_divergence.md">Markdown source</a></div>
-<h2>1. 定义</h2>
-<p><strong>Kullback–Leibler Divergence（KL 散度）</strong>，又称相对熵（Relative Entropy），用于描述两个概率分布之间的差异。KL 散度一般不对称，因此不是严格意义上的距离。</p>
-<p>对于定义在同一离散样本空间 \(\mathcal X\) 上的两个概率分布 \(P\) 和 \(Q\)：</p>
-\[
-\boxed{D_{\mathrm{KL}}(P\|Q)=\sum_{x\in\mathcal X}P(x)\log\frac{P(x)}{Q(x)}}
-\]
-<p>等价的期望形式：</p>
-\[
-\boxed{D_{\mathrm{KL}}(P\|Q)=\mathbb E_{x\sim P}\left[\log\frac{P(x)}{Q(x)}\right]}
-\]
-<p>如果 \(P,Q\) 具有相对于同一测度的密度 \(p,q\)，则有：</p>
-\[
-D_{\mathrm{KL}}(P\|Q)=\int p(x)\log\frac{p(x)}{q(x)}\,dx.
-\]
-<p>通常使用自然对数，此时单位为 <strong>nat</strong>；若使用 \(\log_2\)，单位为 bit。</p>
-<p>零概率约定：当 \(P(x)=0\) 时，相应项记为 0；若存在 \(P(x)&gt;0\) 而 \(Q(x)=0\)，则 KL 为 \(+\infty\)。更一般地，KL 只有在 \(P\ll Q\) 时才可能有限。</p>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KL Divergence — Introduction</title>
 
-<h2>2. 直观理解：多花了多少编码长度？</h2>
-<p>假设数据实际上来自 \(P\)，但我们误以为数据来自 \(Q\)，并据此使用 \(Q\) 的理想编码方案。一个观测 \(x\) 的理想编码长度分别为：</p>
-\[
-L_P(x)=-\log P(x),\qquad L_Q(x)=-\log Q(x).
-\]
-<p>那么，平均额外编码长度为：</p>
-\[
-\begin{aligned}
-\mathbb E_{x\sim P}[L_Q(x)-L_P(x)]
-&=\mathbb E_{x\sim P}[-\log Q(x)+\log P(x)]\\
-&=\boxed{D_{\mathrm{KL}}(P\|Q)}.
-\end{aligned}
-\]
-<ul>
-<li><strong>\(P\)</strong>：实际的数据分布。</li>
-<li><strong>\(Q\)</strong>：用于近似或描述数据的分布。</li>
-<li><strong>\(D_{\mathrm{KL}}(P\|Q)\)</strong>：错误使用 \(Q\) 而不是 \(P\) 所增加的平均理想编码长度。</li>
-</ul>
-<p class="key">注意：这是平均意义下的额外成本。对单个 \(x\)，\(\log(P(x)/Q(x))\) 可以小于 0。</p>
+  <!-- 和 Properties of KL Divergence 一致：用 MathJax 渲染 LaTeX -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+    onerror="var backup=document.createElement('script');backup.defer=true;backup.src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js';document.head.appendChild(backup);">
+  </script>
 
-<h2>3. 一个简单例子</h2>
-<p>设 \(P=(0.5,0.5)\)，\(Q=(0.75,0.25)\)。</p>
-\[
-\begin{aligned}
-D_{\mathrm{KL}}(P\|Q)
-&=0.5\log\frac{0.5}{0.75}+0.5\log\frac{0.5}{0.25}\\
-&\approx\boxed{0.1438}.
-\end{aligned}
-\]
-<p>交换两个分布：</p>
-\[
-\begin{aligned}
-D_{\mathrm{KL}}(Q\|P)
-&=0.75\log\frac{0.75}{0.5}+0.25\log\frac{0.25}{0.5}\\
-&\approx\boxed{0.1308}.
-\end{aligned}
-\]
-<p>因此，\(D_{\mathrm{KL}}(P\|Q)\ne D_{\mathrm{KL}}(Q\|P)\)。两种表达式的<strong>期望分布不同</strong>，所以一般不会得到相同的数值。</p>
+  <style>
+    body {
+      margin: 0;
+      background: #f4f7f6;
+      color: #111;
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.65;
+    }
+    main {
+      width: min(92%, 1100px);
+      margin: 36px auto;
+      padding: 42px 52px 56px;
+      box-sizing: border-box;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, .08);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 2.25rem;
+      letter-spacing: .02em;
+    }
+    h2 {
+      margin: 2.5rem 0 1rem;
+      font-size: 1.55rem;
+      padding-bottom: .45rem;
+      border-bottom: 1px solid #e9ecef;
+    }
+    h3 {
+      margin: 1.8rem 0 .7rem;
+      font-size: 1.28rem;
+    }
+    p, li {
+      font-size: 1.18rem;
+    }
+    p {
+      margin: 1.1rem 0;
+    }
+    ul, ol {
+      padding-left: 1.8rem;
+    }
+    li {
+      margin: .45rem 0;
+    }
+    .back, .meta {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: .95rem;
+    }
+    .back { margin-bottom: 1.4rem; }
+    .meta { color: #555; margin-bottom: 2rem; }
+    a { color: #0645d8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .note {
+      margin: 1.25rem 0;
+      padding: .65rem 1rem;
+      border-left: 3px solid #d5dbe6;
+      background: #fafbfd;
+    }
+    mjx-container[display="true"] {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: .35rem 0;
+      margin: 1.35rem 0 !important;
+    }
+    @media (max-width: 700px) {
+      main {
+        width: 96%;
+        margin: 14px auto;
+        padding: 24px 18px 36px;
+      }
+      h1 { font-size: 1.65rem; }
+      h2 { font-size: 1.35rem; }
+      h3 { font-size: 1.15rem; }
+      p, li { font-size: 1.03rem; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="back"><a href="index.html">← Back to home</a></div>
+  <h1>KL Divergence（KL 散度）</h1>
+  <div class="meta">
+    学习笔记 · 第一部分：定义、直觉与基本性质 ·
+    <a href="https://github.com/EgnaroChan/Egnaro/blob/main/kl_divergence.md">Markdown source</a>
+  </div>
 
-<h2>4. 基本性质</h2>
-<h3>4.1 非负性</h3>
-\[\boxed{D_{\mathrm{KL}}(P\|Q)\ge 0}\]
-<p>等号成立当且仅当 \(P=Q\)（密度表述下为几乎处处相等）。这是 Gibbs 不等式，可由 Jensen 不等式证明，也可利用 \(t\log t-t+1\ge 0\)。</p>
-<h3>4.2 不对称性</h3>
-\[
-D_{\mathrm{KL}}(P\|Q)\ne D_{\mathrm{KL}}(Q\|P)\quad\text{(一般情况下)}.
-\]
-<p>因此 KL 散度不满足距离的对称性要求，通常也不满足三角不等式。</p>
-<h3>4.3 可能为无穷大</h3>
-\[
-P(x)>0,\ Q(x)=0\quad\Longrightarrow\quad D_{\mathrm{KL}}(P\|Q)=+\infty.
-\]
-<p>如果 \(Q\) 认为某个实际可能的事件不可能，就会产生无限大的 KL 惩罚。</p>
+  <h2>1. 定义</h2>
+  <p><strong>Kullback–Leibler Divergence（KL 散度）</strong>，又称相对熵（Relative Entropy），用于描述两个概率分布之间的差异。KL 散度一般不对称，因此不是严格意义上的距离。</p>
 
-<h2>5. 下一步学习</h2>
-<ol>
-<li><strong>非负性证明：</strong>用 Jensen 不等式推导 \(D_{\mathrm{KL}}\ge 0\)。</li>
-<li><strong>信息熵与交叉熵：</strong>推导 \(D_{\mathrm{KL}}(P\|Q)=H(P,Q)-H(P)\)。</li>
-<li><strong>Forward KL 与 Reverse KL：</strong>比较两个优化方向。</li>
-<li><strong>最大似然估计：</strong>理解 KL 与数据分布拟合的关系。</li>
-<li><strong>ELBO 与扩散模型：</strong>理解路径分布的 KL、链式法则与训练目标。</li>
-</ol>
-<p>严格数学证明参见已有笔记：<a href="properties_of_kl_divergence.html">Properties of KL Divergence</a>。</p>
-</main></body></html>
+  <p>对于定义在同一离散样本空间 \(\mathcal{X}\) 上的两个概率分布 \(P\) 和 \(Q\)，定义</p>
+
+  \[
+    D_{\mathrm{KL}}(P\|Q)
+    :=
+    \sum_{x\in\mathcal{X}}
+    P(x)\log\left(\frac{P(x)}{Q(x)}\right).
+  \]
+
+  <p>等价地，也可以写成期望形式：</p>
+
+  \[
+    D_{\mathrm{KL}}(P\|Q)
+    =
+    \mathbb{E}_{x\sim P}
+    \left[
+      \log\left(\frac{P(x)}{Q(x)}\right)
+    \right].
+  \]
+
+  <p>若两个分布具有相对于同一测度的概率密度 \(p(x)\) 和 \(q(x)\)，对应的连续形式为</p>
+
+  \[
+    D_{\mathrm{KL}}(P\|Q)
+    =
+    \int p(x)\log\left(\frac{p(x)}{q(x)}\right)\,dx.
+  \]
+
+  <p>通常使用自然对数，此时 KL 散度的单位是 <strong>nat</strong>；若采用以 2 为底的对数，单位是 bit。</p>
+  <p><strong>零概率约定：</strong>当 \(P(x)=0\) 时，相应项定义为 0；若某处 \(P(x)&gt;0\) 且 \(Q(x)=0\)，则 KL 散度为 \(+\infty\)。更一般地，KL 散度只有在 \(P\ll Q\)（\(P\) 对 \(Q\) 绝对连续）时才可能有限。</p>
+
+  <h2>2. 直观理解：额外的编码长度</h2>
+  <p>假设数据实际服从分布 \(P\)，但我们使用根据 \(Q\) 设计的理想编码。对单个观测 \(x\)，两种编码的长度分别为</p>
+
+  \[
+    L_P(x)=-\log P(x),
+    \qquad
+    L_Q(x)=-\log Q(x).
+  \]
+
+  <p>使用 \(Q\) 而非 \(P\) 时，平均增加的编码长度为</p>
+
+  \[
+    \begin{aligned}
+    \mathbb{E}_{x\sim P}
+    \left[L_Q(x)-L_P(x)\right]
+    &= \mathbb{E}_{x\sim P}
+       \left[-\log Q(x)+\log P(x)\right] \\
+    &= D_{\mathrm{KL}}(P\|Q).
+    \end{aligned}
+  \]
+
+  <p>因此，\(P\) 可以理解为真实分布，\(Q\) 可以理解为用于近似真实分布的模型，\(D_{\mathrm{KL}}(P\|Q)\) 则表示分布不匹配带来的<strong>平均额外编码代价</strong>。</p>
+  <p class="note">这里的“额外”是平均意义上的。对于单个样本 \(x\)，\(\log(P(x)/Q(x))\) 可以为负数。</p>
+
+  <h2>3. 一个简单例子</h2>
+  <p>考虑两个二元分布：</p>
+
+  \[
+    P=(0.5,0.5),
+    \qquad
+    Q=(0.75,0.25).
+  \]
+
+  <p>根据 KL 散度的定义，</p>
+
+  \[
+    \begin{aligned}
+    D_{\mathrm{KL}}(P\|Q)
+    &= 0.5\log\left(\frac{0.5}{0.75}\right)
+       +0.5\log\left(\frac{0.5}{0.25}\right) \\
+    &\approx 0.1438.
+    \end{aligned}
+  \]
+
+  <p>如果交换两个分布的位置，</p>
+
+  \[
+    \begin{aligned}
+    D_{\mathrm{KL}}(Q\|P)
+    &= 0.75\log\left(\frac{0.75}{0.5}\right)
+       +0.25\log\left(\frac{0.25}{0.5}\right) \\
+    &\approx 0.1308.
+    \end{aligned}
+  \]
+
+  <p>我们发现</p>
+
+  \[
+    D_{\mathrm{KL}}(P\|Q)
+    \neq
+    D_{\mathrm{KL}}(Q\|P).
+  \]
+
+  <p>原因在于，两种表达式分别对 \(P\) 和 \(Q\) 取期望，其权重不同。KL 散度通常不对称。</p>
+
+  <h2>4. 基本性质</h2>
+
+  <h3>4.1 非负性</h3>
+  <p>对于任意两个概率分布 \(P\) 和 \(Q\)，有</p>
+
+  \[
+    D_{\mathrm{KL}}(P\|Q)\ge 0.
+  \]
+
+  <p>等号成立当且仅当 \(P=Q\)（若以密度表示，则为几乎处处相等）。这一结论也称为 <strong>Gibbs 不等式</strong>。可由 Jensen 不等式证明，也可利用 \(t\log t-t+1\ge 0\) 证明。</p>
+
+  <h3>4.2 不对称性</h3>
+  <p>一般情况下，</p>
+
+  \[
+    D_{\mathrm{KL}}(P\|Q)
+    \neq
+    D_{\mathrm{KL}}(Q\|P).
+  \]
+
+  <p>因此，KL 散度不满足距离的对称性要求，一般也不满足三角不等式。</p>
+
+  <h3>4.3 可能为无穷大</h3>
+  <p>如果 \(P\) 认为某个结果有可能发生，而 \(Q\) 认为它不可能发生，即</p>
+
+  \[
+    P(x)>0,
+    \qquad
+    Q(x)=0,
+  \]
+
+  <p>那么</p>
+
+  \[
+    D_{\mathrm{KL}}(P\|Q)=+\infty.
+  \]
+
+  <h2>5. 下一步学习</h2>
+  <ol>
+    <li><strong>非负性证明：</strong>用 Jensen 不等式推导 \(D_{\mathrm{KL}}\ge 0\)。</li>
+    <li><strong>信息熵与交叉熵：</strong>推导 \(D_{\mathrm{KL}}(P\|Q)=H(P,Q)-H(P)\)。</li>
+    <li><strong>Forward KL / Reverse KL：</strong>比较两个优化方向的差异。</li>
+    <li><strong>最大似然估计：</strong>理解 KL 与数据分布拟合的关系。</li>
+    <li><strong>ELBO 与扩散模型：</strong>理解路径分布的 KL、链式法则及训练目标。</li>
+  </ol>
+
+  <p>更严格的数学证明参见已有笔记：
+    <a href="properties_of_kl_divergence.html">Properties of KL Divergence</a>。
+  </p>
+</main>
+</body>
+</html>
