@@ -420,7 +420,7 @@ $$
 \log p_\theta(x)=\log\int p_\theta(x,z)\,dz.
 $$
 
-引入辅助分布 $q_\phi(z\mid x)$，假设下面的概率比值定义良好。乘除 $q_\phi(z\mid x)$：
+引入辅助分布 $q_\phi(z\mid x)$。这里假设 $q_\phi(z\mid x)$ 的支撑覆盖 $p_\theta(x,z)$ 为正的区域，以确保下面的期望改写成立。乘除 $q_\phi(z\mid x)$：
 
 $$
 \begin{aligned}
