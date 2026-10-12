@@ -73,28 +73,96 @@
 </head>
 <body>
 <main>
-  <div class="back"><a href="index.html">← Back to home</a></div>
-  <h1>KL Divergence（KL 散度）</h1>
-  <div class="meta">数学与机器学习笔记 · <a href="https://github.com/EgnaroChan/Egnaro/blob/main/kl_divergence.md">Markdown source</a></div>
-<nav class="toc" aria-label="目录">
-  <div class="toc-title">Contents</div>
-  <div class="toc-grid">
-    <a href="#section-1"><span>1.</span> KL 散度究竟在衡量什么？</a>
-    <a href="#section-2"><span>2.</span> 一个具体例子：预测硬币结果</a>
-    <a href="#section-3"><span>3.</span> 数学定义、取值范围与记号</a>
-    <a href="#section-4"><span>4.</span> KL 的非负性：为什么平均损失不会更小？</a>
-    <a href="#section-5"><span>5.</span> 熵、交叉熵以及最大似然估计</a>
-    <a href="#section-6"><span>6.</span> Forward KL 与 Reverse KL</a>
-    <a href="#section-7"><span>7.</span> KL 的链式法则与数据处理不等式</a>
-    <a href="#section-8"><span>8.</span> 从 KL 推导 ELBO</a>
-    <a href="#section-9"><span>9.</span> 扩散模型为何出现逐时间步 KL？</a>
-    <a href="#section-10"><span>10.</span> 序列生成与可编辑轨迹：两个不能混淆的目标</a>
-    <a href="#section-11"><span>11.</span> 核心结论与阅读路线</a>
-  </div>
-</nav>
-<p class="abstract">从概率预测与对数似然出发，理解 KL 的数学定义、优化行为，以及它在变分推断和扩散模型中的作用。</p>
+<div class="back"><a href="index.html">← Back to home</a></div>
+<h1>KL Divergence（KL 散度）</h1>
+<div class="meta">数学与机器学习笔记 · <a href="https://github.com/EgnaroChan/Egnaro/blob/main/kl_divergence.md">Markdown source</a></div>
+<nav class="toc" aria-label="目录"><div class="toc-title">Contents</div><div class="toc-grid">
+<a href="#section-1"><span>1.</span> KL 散度的定义</a>
+<a href="#section-2"><span>2.</span> KL 散度的直观意义：平均额外对数损失</a>
+<a href="#section-3"><span>3.</span> 例子：两种硬币预测分布</a>
+<a href="#section-4"><span>4.</span> KL 的非负性：为什么平均损失不会更小？</a>
+<a href="#section-5"><span>5.</span> 熵、交叉熵以及最大似然估计</a>
+<a href="#section-6"><span>6.</span> Forward KL 与 Reverse KL</a>
+<a href="#section-7"><span>7.</span> KL 的链式法则与数据处理不等式</a>
+<a href="#section-8"><span>8.</span> 从 KL 推导 ELBO</a>
+<a href="#section-9"><span>9.</span> 扩散模型为何出现逐时间步 KL？</a>
+<a href="#section-10"><span>10.</span> 序列生成与可编辑轨迹：两个不能混淆的目标</a>
+<a href="#section-11"><span>11.</span> 核心结论与阅读路线</a>
+</div></nav>
+<p class="abstract">从 KL 散度的定义出发，理解其数学性质、统计意义、优化目标及其在扩散模型中的应用。</p>
 
-<h2 id="section-1">1. KL 散度究竟在衡量什么？</h2>
+<h2 id="section-1">1. KL 散度的定义</h2>
+
+<h3>1.1 离散分布与连续分布</h3>
+
+<p>设 \(P,Q\) 是同一离散样本空间 \(\mathcal X\) 上的概率分布。<strong>KL 散度（Kullback–Leibler divergence）</strong>定义为</p>
+
+\[
+D_{\mathrm{KL}}(P\|Q)
+=\sum_{x\in\mathcal X}
+P(x)\log\frac{P(x)}{Q(x)}.
+\]
+
+<p>等价地，可以写成对 \(P\) 取期望的形式：</p>
+
+\[
+D_{\mathrm{KL}}(P\|Q)
+=\mathbb E_{x\sim P}\left[\log\frac{P(x)}{Q(x)}\right].
+\]
+
+<p>如果两个分布在连续样本空间上具有相对于同一基准测度的密度 \(p(x)\) 和 \(q(x)\)，则</p>
+
+\[
+D_{\mathrm{KL}}(P\|Q)
+=\int p(x)\log\frac{p(x)}{q(x)}\,dx.
+\]
+
+<p>两种形式表达的是同一件事：对 \(P\) 下的<strong>对数概率比（log-likelihood ratio）</strong>取期望。</p>
+
+<h3>1.2 当某个事件的概率为零时</h3>
+
+<p>在离散情况下，零概率有两种不同情形：</p>
+
+<ul>
+
+<li>如果 \(P(x)=0\)，这个事件不会从真实分布中出现，对求和没有贡献；约定对应项为 \(0\)。</li>
+
+<li>如果 \(P(x)&gt;0\)，但 \(Q(x)=0\)，模型把一个实际可能发生的事件判断为绝不可能，损失 \(-\log Q(x)=+\infty\)，因此 \(D_{\mathrm{KL}}(P\|Q)=+\infty\)。</li>
+
+</ul>
+
+<p>上述零概率条件可以用一个标准记号表示：<strong>绝对连续（absolute continuity）</strong></p>
+
+\[
+P\ll Q.
+\]
+
+<p>它的严格含义是：<strong>只要 \(Q\) 认为某个事件集合 \(A\) 的概率为零，\(P\) 也必须认为它的概率为零</strong>，即</p>
+
+\[
+Q(A)=0\quad\Longrightarrow\quad P(A)=0.
+\]
+
+<p>对于有限离散样本空间，这恰好等价于</p>
+
+\[
+P(x)&gt;0\quad\Longrightarrow\quad Q(x)&gt;0.
+\]
+
+<p>因此，KL 有限要求 \(P\ll Q\)：\(Q\) 的零概率事件不能在 \(P\) 下有正概率。<strong>在一般连续空间中，\(P\ll Q\) 只是 KL 有限的必要条件，不是充分条件</strong>：对数密度比的期望仍可能发散。</p>
+
+<h3>1.3 为什么有 nat 和 bit？</h3>
+
+<p>上述公式中的 \(\log\) 通常指自然对数 \(\ln\)。也可以使用以 \(2\) 为底的对数；改变底数只会改变数值的比例，不会改变两个分布的关系或优化最优解：</p>
+
+\[
+D_{\mathrm{KL}}^{(2)}(P\|Q)
+=\frac{D_{\mathrm{KL}}^{(e)}(P\|Q)}{\ln 2}.
+\]
+
+<p>使用自然对数时，习惯称单位为 <strong>nat</strong>；使用 \(\log_2\) 时，称单位为 <strong>bit</strong>。例如，同一 KL 若为 \(0.1\) nat，则等于约 \(0.1443\) bit。两种单位的区别只来自对数底数。<strong>机器学习论文若没有特殊说明，通常约定 \(\log=\ln\)。</strong></p>
+
+<h2 id="section-2">2. KL 散度的直观意义：平均额外对数损失</h2>
 
 <p>考虑一个概率预测问题：随机变量 \(X\) 的真实分布为 \(P\)，我们却使用模型分布 \(Q\) 预测它。对观测结果 \(x\)，模型给出的概率为 \(Q(x)\)。</p>
 
@@ -124,20 +192,13 @@ L_P(Q)-L_P(P)
 \end{aligned}
 \]
 
-<p>这个差值就是 <strong>Kullback–Leibler divergence（KL 散度）</strong>：</p>
-
-\[
-D_{\mathrm{KL}}(P\|Q)
-:=
-\mathbb{E}_{x\sim P}
-\left[\log\frac{P(x)}{Q(x)}\right].
-\]
+<p>这恰好就是第 1 节定义的 KL 散度。因此，</p>
 
 <p>因此，可以把 \(D_{\mathrm{KL}}(P\|Q)\) 理解为：<strong>数据来自 \(P\)，但使用 \(Q\) 预测时，相比使用真实分布 \(P\)，平均多承担多少对数损失。</strong></p>
 
 <p>这里的顺序非常重要：<strong>\(P\) 决定数据出现的频率，\(Q\) 决定预测给这些数据分配的概率</strong>。KL 不是简单地逐点比较两组数字，再求一个普通的距离。</p>
 
-<h2 id="section-2">2. 一个具体例子：预测硬币结果</h2>
+<h2 id="section-3">3. 例子：两种硬币预测分布</h2>
 
 <p>假设硬币实际上以 \(0.8\) 的概率出现正面，以 \(0.2\) 的概率出现反面，但模型认为正、反面的概率分别是 \(0.6\) 和 \(0.4\)：</p>
 
@@ -180,70 +241,6 @@ D_{\mathrm{KL}}(Q\|P)
 \]
 
 <p>数值不同，是因为交换以后，<strong>用来加权各个事件的概率也变了</strong>。这就是 KL 散度不对称的根本原因。</p>
-
-<h2 id="section-3">3. 数学定义、取值范围与记号</h2>
-
-<h3>3.1 离散分布与连续分布</h3>
-
-<p>设 \(P,Q\) 是同一离散样本空间 \(\mathcal X\) 上的概率分布。上一节的期望可以展开为</p>
-
-\[
-D_{\mathrm{KL}}(P\|Q)
-=\sum_{x\in\mathcal X}
-P(x)\log\frac{P(x)}{Q(x)}.
-\]
-
-<p>如果分布具有关于同一基准测度的密度 \(p(x)\)、\(q(x)\)，则连续形式为</p>
-
-\[
-D_{\mathrm{KL}}(P\|Q)
-=\int p(x)\log\frac{p(x)}{q(x)}\,dx.
-\]
-
-<p>两种形式表达的是同一件事：对 \(P\) 下的<strong>对数概率比（log-likelihood ratio）</strong>取期望。</p>
-
-<h3>3.2 当某个事件的概率为零时</h3>
-
-<p>在离散情况下，零概率有两种不同情形：</p>
-
-<ul>
-
-<li>如果 \(P(x)=0\)，这个事件不会从真实分布中出现，对求和没有贡献；约定对应项为 \(0\)。</li>
-
-<li>如果 \(P(x)&gt;0\)，但 \(Q(x)=0\)，模型把一个实际可能发生的事件判断为绝不可能，损失 \(-\log Q(x)=+\infty\)，因此 \(D_{\mathrm{KL}}(P\|Q)=+\infty\)。</li>
-
-</ul>
-
-<p>第二种情况引出论文中常见的<strong>绝对连续（absolute continuity）</strong>记号：</p>
-
-\[
-P\ll Q.
-\]
-
-<p>它的严格含义是：<strong>只要 \(Q\) 认为某个事件集合 \(A\) 的概率为零，\(P\) 也必须认为它的概率为零</strong>，即</p>
-
-\[
-Q(A)=0\quad\Longrightarrow\quad P(A)=0.
-\]
-
-<p>对于有限离散样本空间，这恰好等价于</p>
-
-\[
-P(x)&gt;0\quad\Longrightarrow\quad Q(x)&gt;0.
-\]
-
-<p>所以，“\(D_{\mathrm{KL}}(P\|Q)\) 有限需要 \(P\ll Q\)”并不是额外的神秘假设，而是“模型不能把真实可能出现的事件赋予零概率”的严格表述。<strong>在一般连续空间中，\(P\ll Q\) 只是 KL 有限的必要条件，不是充分条件</strong>：对数密度比的期望仍可能发散。</p>
-
-<h3>3.3 为什么有 nat 和 bit？</h3>
-
-<p>前面的例子使用的是自然对数 \(\ln\)（底数为 \(e\)）。如果改用以 \(2\) 为底的对数，同一 KL 的数值会改变，但物理意义和优化最优解不会变：</p>
-
-\[
-D_{\mathrm{KL}}^{(2)}(P\|Q)
-=\frac{D_{\mathrm{KL}}^{(e)}(P\|Q)}{\ln 2}.
-\]
-
-<p>使用自然对数时，习惯称单位为 <strong>nat</strong>；使用 \(\log_2\) 时，称单位为 <strong>bit</strong>。例如第 2 节的 \(0.0915\) nat 约等于 \(0.1320\) bit。它们只是同一信息量的不同计量单位。<strong>机器学习论文若没有特殊说明，通常约定 \(\log=\ln\)。</strong></p>
 
 <h2 id="section-4">4. KL 的非负性：为什么平均损失不会更小？</h2>
 
@@ -291,7 +288,7 @@ H(P)=-\mathbb{E}_{x\sim P}\log P(x).
 H(P,Q)=-\mathbb{E}_{x\sim P}\log Q(x).
 \]
 
-<p>因此，按照第 1 节的推导，立刻得到</p>
+<p>因此，按照第 2 节的推导，立刻得到</p>
 
 \[
 D_{\mathrm{KL}}(P\|Q)=H(P,Q)-H(P).
