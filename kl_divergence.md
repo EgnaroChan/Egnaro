@@ -53,187 +53,169 @@ $$
 
 因此，KL 有限要求 $P\ll Q$：$Q$ 的零概率事件不能在 $P$ 下有正概率。**在一般连续空间中，$P\ll Q$ 只是 KL 有限的必要条件，不是充分条件**：对数密度比的期望仍可能发散。
 
-## 2. KL 散度的直观意义：平均额外对数损失
+## 2. 基本性质
 
-考虑一个概率预测问题：随机变量 $X$ 的真实分布为 $P$，我们却使用模型分布 $Q$ 预测它。对观测结果 $x$，模型给出的概率为 $Q(x)$。
+### 2.1 非负性（Gibbs 不等式）
 
-如何评价这次预测？一种标准选择是**对数损失（log loss）**：
-
-$$
-\ell_Q(x)=-\log Q(x).
-$$
-
-预测越自信且越正确，损失越小；若模型把实际发生的结果判为几乎不可能，损失就非常大。使用对数还有一个重要性质：若两个独立事件的联合概率是概率之积，联合对数损失便等于两个损失之和。
-
-由于观测 $x$ 由真实分布 $P$ 产生，评价模型的**平均对数损失**必须对 $P$ 取期望：
+对任意两个概率分布 $P,Q$，
 
 $$
-L_P(Q)=\mathbb{E}_{x\sim P}[-\log Q(x)].
+D_{\mathrm{KL}}(P\|Q)\geq 0,
 $$
 
-如果我们恰好知道真实分布并用它来预测，平均损失是 $L_P(P)$。两者之差为
+且等号成立当且仅当 $P=Q$（连续情形为几乎处处相等）。这个结论说明 KL 的最小值是 $0$，但**不能理解为求和中的每一项都非负**：当 $P(x)<Q(x)$ 时，$P(x)\log(P(x)/Q(x))$ 就是负数。
 
-$$
-\begin{aligned}
-L_P(Q)-L_P(P)
-&=\mathbb{E}_{x\sim P}
-\left[-\log Q(x)+\log P(x)\right]\\
-&=\mathbb{E}_{x\sim P}
-\left[\log\frac{P(x)}{Q(x)}\right].
-\end{aligned}
-$$
-
-这恰好就是第 1 节定义的 KL 散度。因此，
-
-因此，可以把 $D_{\mathrm{KL}}(P\|Q)$ 理解为：**数据来自 $P$，但使用 $Q$ 预测时，相比使用真实分布 $P$，平均多承担多少对数损失。**
-
-这里的顺序非常重要：**$P$ 决定数据出现的频率，$Q$ 决定预测给这些数据分配的概率**。KL 不是简单地逐点比较两组数字，再求一个普通的距离。
-
-## 3. 例子：两种硬币预测分布
-
-假设硬币实际上以 $0.8$ 的概率出现正面，以 $0.2$ 的概率出现反面，但模型认为正、反面的概率分别是 $0.6$ 和 $0.4$：
-
-$$
-P=(0.8,0.2),\qquad Q=(0.6,0.4).
-$$
-
-对于**正面**，模型低估了概率，其额外对数损失是
-
-$$
-\log\frac{0.8}{0.6}=\log\frac43\approx0.2877.
-$$
-
-对于**反面**，模型高估了概率，此时额外对数损失反而为负：
-
-$$
-\log\frac{0.2}{0.4}=\log\frac12\approx-0.6931.
-$$
-
-但是正面会出现 $80\%$ 的时间，反面只会出现 $20\%$ 的时间。于是平均额外损失为
+**证明（离散情形）。** 若存在 $P(x)>0$、$Q(x)=0$，则 KL 为 $+\infty$。否则，利用 $-\log u$ 的凸性以及 Jensen 不等式，
 
 $$
 \begin{aligned}
 D_{\mathrm{KL}}(P\|Q)
-&=0.8\log\frac{0.8}{0.6}
-+0.2\log\frac{0.2}{0.4}\\
-&\approx0.0915.
-\end{aligned}
-$$
-
-**需要区分单次预测与平均预测：**某次事件上，错误模型的对数损失可能比真实分布更小；但是从真实分布反复抽样，平均额外损失不可能为负。后面将严格证明这一点。
-
-如果交换 $P$ 和 $Q$，得到
-
-$$
-D_{\mathrm{KL}}(Q\|P)
-=0.6\log\frac{0.6}{0.8}
-+0.4\log\frac{0.4}{0.2}
-\approx0.1046.
-$$
-
-数值不同，是因为交换以后，**用来加权各个事件的概率也变了**。这就是 KL 散度不对称的根本原因。
-
-## 4. KL 的非负性：为什么平均损失不会更小？
-
-KL 散度满足 **Gibbs 不等式**：
-
-$$
-D_{\mathrm{KL}}(P\|Q)\geq0,
-$$
-
-且等号成立当且仅当 $P=Q$（连续情形为几乎处处相等）。这是我们称它为“平均额外损失”的数学依据。
-
-**证明。** 若存在 $P(x)>0,Q(x)=0$，KL 为无穷大，结论显然。否则，利用 $-\log u$ 的凸性及 Jensen 不等式：
-
-$$
-\begin{aligned}
-D_{\mathrm{KL}}(P\|Q)
-&=\mathbb{E}_{x\sim P}
+&=\mathbb E_{x\sim P}
 \left[-\log\frac{Q(x)}{P(x)}\right]\\
-&\geq-\log\mathbb{E}_{x\sim P}
+&\geq-\log\mathbb E_{x\sim P}
 \left[\frac{Q(x)}{P(x)}\right]\\
 &=-\log\sum_{x:P(x)>0}Q(x)\\
-&\geq0.
+&\geq-\log 1=0.
 \end{aligned}
 $$
 
-最后一步利用了 $Q$ 的总概率为 $1$。要使两个不等式同时取等，$Q$ 必须把全部概率放在 $P$ 的支撑集上，而且 $Q(x)/P(x)$ 在该集合上为常数；归一化条件进一步给出 $Q=P$。
+最后一个不等式使用了 $\sum_{x:P(x)>0}Q(x)\leq1$。等号成立时，$Q$ 在 $P$ 的支撑集外没有概率质量，且由 Jensen 的严格凸性，$Q(x)/P(x)$ 在支撑集上为常数；归一化条件进一步要求这个常数等于 $1$。
 
-**不要从每项非负去理解这个证明。** 单项 $\log(P(x)/Q(x))$ 可以为负；非负性是整个期望和概率归一化共同作用的结果。
+### 2.2 不对称性
 
-KL 不是数学意义上的距离：一般而言 $D_{\mathrm{KL}}(P\|Q)\neq D_{\mathrm{KL}}(Q\|P)$，也不满足三角不等式。
-
-## 5. 熵、交叉熵以及最大似然估计
-
-### 5.1 熵与交叉熵如何联系 KL？
-
-如果用真实分布 $P$ 自己预测数据，平均对数损失称为**熵（entropy）**：
+KL 一般不满足对称性。取
 
 $$
-H(P)=-\mathbb{E}_{x\sim P}\log P(x).
+P=(0.5,0.5),\qquad Q=(0.75,0.25).
 $$
 
-如果使用另一个分布 $Q$ 来预测，同样在真实数据 $P$ 上计算平均损失，得到**交叉熵（cross-entropy）**：
+直接计算得到
 
 $$
-H(P,Q)=-\mathbb{E}_{x\sim P}\log Q(x).
+\begin{aligned}
+D_{\mathrm{KL}}(P\|Q)&\approx0.1438,\\
+D_{\mathrm{KL}}(Q\|P)&\approx0.1308.
+\end{aligned}
 $$
 
-因此，按照第 2 节的推导，立刻得到
+因此，$D_{\mathrm{KL}}(P\|Q)\neq D_{\mathrm{KL}}(Q\|P)$。其区别来自**取期望的分布不同**：前者按 $P(x)$ 对各个位置加权，后者按 $Q(x)$ 加权。KL 也一般不满足三角不等式，因而不是数学意义上的距离（metric）。
+
+## 3. KL、交叉熵与最大似然估计
+
+### 3.1 交叉熵与 KL 的关系
+
+对于离散分布 $P$，熵（entropy）定义为
 
 $$
-D_{\mathrm{KL}}(P\|Q)=H(P,Q)-H(P).
+H(P)=-\sum_xP(x)\log P(x).
 $$
 
-这三个概念的区别非常明确：**熵**衡量 $P$ 本身的平均不确定性；**交叉熵**衡量用 $Q$ 预测来自 $P$ 的数据时的平均损失；**KL**则是后者相对于前者增加的损失。
+给定另一个分布 $Q$，交叉熵（cross-entropy）定义为
 
-### 5.2 为什么最小化交叉熵等于最小化 KL？
+$$
+H(P,Q)=-\sum_xP(x)\log Q(x).
+$$
 
-令 $P=p_{\mathrm{data}}$ 是真实数据分布，$Q=p_\theta$ 是参数为 $\theta$ 的模型分布。因为 $H(p_{\mathrm{data}})$ 与 $\theta$ 无关，所以
+两者的期望分布都是 $P$，区别只在于对数项使用 $P(x)$ 还是 $Q(x)$。将 KL 的定义展开，
+
+$$
+\begin{aligned}
+D_{\mathrm{KL}}(P\|Q)
+&=\sum_xP(x)\log P(x)
+-\sum_xP(x)\log Q(x)\\
+&=H(P,Q)-H(P).
+\end{aligned}
+$$
+
+这是一个精确恒等式。它也说明了 KL 的一个常用解释：**若样本服从 $P$，则使用 $Q$ 代替 $P$ 所增加的平均负对数概率，恰好等于 $D_{\mathrm{KL}}(P\|Q)$**。这里无需先引入编码理论，直接比较两个期望即可。
+
+### 3.2 为什么最大似然对应 Forward KL？
+
+令 $p_{\mathrm{data}}$ 为真实数据分布，$p_\theta$ 为参数化模型。因为 $H(p_{\mathrm{data}})$ 不依赖 $\theta$，所以
 
 $$
 \begin{aligned}
 \arg\min_\theta
 D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta)
-&=\arg\min_\theta H(p_{\mathrm{data}},p_\theta)\\
+&=\arg\min_\theta
+H(p_{\mathrm{data}},p_\theta)\\
 &=\arg\max_\theta
-\mathbb{E}_{x\sim p_{\mathrm{data}}}
-\log p_\theta(x).
+\mathbb E_{x\sim p_{\mathrm{data}}}\log p_\theta(x).
 \end{aligned}
 $$
 
-真实分布未知，因此我们用训练样本 $x^{(1)},\ldots,x^{(N)}$ 的经验平均来估计最后一个期望：
+真实分布未知时，使用独立样本 $x^{(1)},\ldots,x^{(N)}$ 估计期望，就得到负对数似然（NLL）损失：
 
 $$
 \mathcal L_{\mathrm{NLL}}(\theta)
-=-\frac1N\sum_{i=1}^{N}\log p_\theta(x^{(i)}).
+=-\frac1N\sum_{i=1}^N\log p_\theta(x^{(i)}).
 $$
 
-最小化负对数似然（negative log-likelihood，NLL），就是**最大似然估计（maximum likelihood estimation，MLE）**。因此，MLE 的总体目标可以视为最小化 $D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta)$；训练集上的 NLL 则是相应期望的经验估计。这里不需要把连续数据的经验分布直接代入 KL 公式。
+这就是最大似然估计（MLE）的常见训练形式。严格地说，**最小化总体 Forward KL 等价于最大化真实分布下的期望对数似然；样本 NLL 是后者的经验估计**。两者应区分，尤其是在讨论泛化或有限样本误差时。
 
-这一结果还解释了监督分类中的交叉熵：如果标签分布是 one-hot，那么给正确类别赋予概率 $p_\theta(y\mid x)$ 的交叉熵就是 $-\log p_\theta(y\mid x)$。
+在分类问题中，当真实标签分布是 one-hot 时，交叉熵退化为正确标签的负对数概率 $-\log p_\theta(y\mid x)$。
 
-## 6. Forward KL 与 Reverse KL
+## 4. Forward KL 与 Reverse KL
 
-固定目标分布 $P$，让模型分布 $Q_\theta$ 随参数变化。有两个不同的优化问题：
+在比较两种 KL 方向前，先固定约定：$P$ 是**目标分布**，$Q_\theta$ 是**可训练模型**。
 
 $$
-\underbrace{D_{\mathrm{KL}}(P\|Q_\theta)}_{\text{Forward KL}}
-\qquad\text{和}\qquad
-\underbrace{D_{\mathrm{KL}}(Q_\theta\|P)}_{\text{Reverse KL}}.
+\begin{aligned}
+\text{Forward KL:}\quad&
+D_{\mathrm{KL}}(P\|Q_\theta)
+=\mathbb E_{x\sim P}
+\log\frac{P(x)}{Q_\theta(x)},\\
+\text{Reverse KL:}\quad&
+D_{\mathrm{KL}}(Q_\theta\|P)
+=\mathbb E_{x\sim Q_\theta}
+\log\frac{Q_\theta(x)}{P(x)}.
+\end{aligned}
 $$
 
-在 Forward KL 中，我们对 $x\sim P$ 取期望，所以所有真实分布经常出现的区域都会影响目标；如果 $Q_\theta(x)=0$ 而 $P(x)>0$，损失无穷大。Reverse KL 则对 $x\sim Q_\theta$ 取期望；如果模型把质量放在 $P(x)=0$ 的区域，损失无穷大。
+### 4.1 为什么优化方向会影响结果？
 
-**常见的多模态直觉。** 若 $P$ 有多个相距很远的模态，但模型族受到限制（例如只能用单峰分布近似），最小化 Forward KL 往往倾向覆盖多个模态（mode-covering），而最小化 Reverse KL 往往倾向集中到某一个模态（mode-seeking）。理由并非“KL 本身具有某种模式偏好”，而是**两种方向的惩罚和取期望区域不同，加上模型族无法精确表达 $P$**。
+Forward KL 在 $P$ 下计算期望。如果 $P$ 在某一区域具有正概率，而 $Q_\theta$ 在该区域为零，那么 Forward KL 为无穷大；因此它严厉惩罚模型**遗漏目标分布的支撑区域**。
 
-这个判断有两个边界：一是并非对任意分布或模型族都成立；二是如果模型族包含 $P$，则两者共同的全局最优都是 $Q_\theta=P$，KL 值为 $0$。实际论文中描述 mode-seeking 时，应当明确模型表达能力与支撑集的假设。
+Reverse KL 则在 $Q_\theta$ 下计算期望。如果模型在目标 $P$ 为零的区域放置概率质量，那么 Reverse KL 为无穷大；因此它严厉惩罚模型**把概率分配给目标不支持的区域**。
 
-## 7. KL 的链式法则与数据处理不等式
+两种惩罚的不对称性，是理解多模态分布拟合行为的起点。
 
-### 7.1 联合分布为什么可以分解？
+### 4.2 为什么经常说 mode-covering 与 mode-seeking？
 
-设 $P(X,Y)$ 和 $Q(X,Y)$ 是同一对随机变量的两个联合分布。由条件概率分解，
+考虑目标 $P$ 是由两个相距较远的模态构成的混合分布，而模型 $Q_\theta$ 被限制为**单个高斯分布**。Forward KL 的优化等价于最小化
+
+$$
+-\mathbb E_{x\sim P}\log\mathcal N(x;\mu,\sigma^2).
+$$
+
+在 $P$ 具有有限方差时，将高斯密度展开：
+
+$$
+-\mathbb E_P\log\mathcal N(x;\mu,\sigma^2)
+=
+\frac12\log(2\pi\sigma^2)
++\frac{\mathbb E_P[(x-\mu)^2]}{2\sigma^2}.
+$$
+
+对 $\mu,\sigma^2$ 求极小值可得
+
+$$
+\mu^*=\mathbb E_P[x],
+\qquad
+(\sigma^2)^*=\operatorname{Var}_P(x).
+$$
+
+这说明 Forward KL 下的单高斯会**匹配目标分布的均值和方差**；当两个模态相距很远时，它可能用较大的方差同时覆盖两个模态。
+
+Reverse KL 不具有上述矩匹配结论。在模态分离明显且模型只能描述一个模态时，它通常倾向集中在其中一个模态附近，以避免将大量概率放在目标密度很小的区域，这被称为 *mode-seeking*。
+
+这里的 mode-covering/mode-seeking 是**受限模型族下的典型现象，不是无条件的定理**。如果模型能够表示 $P$，两种方向的全局最优都是 $Q_\theta=P$。
+
+## 5. KL 的链式法则
+
+### 5.1 两个随机变量
+
+设 $P(X,Y)$ 和 $Q(X,Y)$ 是两个联合分布。利用条件概率分解，
 
 $$
 P(x,y)=P(x)P(y\mid x),
@@ -241,120 +223,117 @@ P(x,y)=P(x)P(y\mid x),
 Q(x,y)=Q(x)Q(y\mid x).
 $$
 
-把这两个式子代入对数比中：
+因此，对数概率比可以拆成两项：
 
 $$
-\begin{aligned}
 \log\frac{P(x,y)}{Q(x,y)}
-&=\log\frac{P(x)}{Q(x)}
-+\log\frac{P(y\mid x)}{Q(y\mid x)}.
-\end{aligned}
+=
+\log\frac{P(x)}{Q(x)}
++
+\log\frac{P(y\mid x)}{Q(y\mid x)}.
 $$
 
-在 $P(x,y)$ 下对等式取期望，就得到**KL 的链式法则**：
+在 $P(x,y)$ 下取期望，即得到 **KL 的链式法则**：
 
 $$
 \begin{aligned}
-D_{\mathrm{KL}}(P(X,Y)\|Q(X,Y))
+&D_{\mathrm{KL}}(P(X,Y)\|Q(X,Y))\\
 &=D_{\mathrm{KL}}(P(X)\|Q(X))\\
-&\quad+\mathbb{E}_{x\sim P(X)}
+&\quad+
+\mathbb E_{x\sim P(X)}
 \left[
-D_{\mathrm{KL}}(P(Y\mid x)\|Q(Y\mid x))
+D_{\mathrm{KL}}\left(
+P(Y\mid x)\|Q(Y\mid x)
+\right)
 \right].
 \end{aligned}
 $$
 
-它说的不是“联合 KL 大约等于逐步 KL”，而是一个**精确分解**。其中条件 KL 的外层期望必须由第一个分布 $P(X)$ 来计算。
+它是精确的概率恒等式，而不只是近似。特别注意：条件 KL 外层的期望由**第一个分布 $P(X)$**决定。
 
-### 7.2 边缘化与数据处理
+### 5.2 边缘化与数据处理不等式
 
-条件 KL 非负，因此
+由条件 KL 非负，立刻得到
 
 $$
 D_{\mathrm{KL}}(P(X,Y)\|Q(X,Y))
 \geq D_{\mathrm{KL}}(P(X)\|Q(X)).
 $$
 
-这意味着：对两个分布都丢弃变量 $Y$，不会使 KL 增大。更一般地，如果两个输入分布 $P_X,Q_X$ 通过**相同**的随机映射 $K(y\mid x)$ 得到 $P_Y,Q_Y$，则
+也就是说，对两个联合分布都边缘化掉 $Y$，KL 不会增加。
+
+更一般地，设两个输入分布 $P_X,Q_X$ 通过**相同**的随机转移 $K(y\mid x)$ 分别得到 $P_Y,Q_Y$，则
 
 $$
 D_{\mathrm{KL}}(P_Y\|Q_Y)
 \leq D_{\mathrm{KL}}(P_X\|Q_X).
 $$
 
-这个结论叫作 **数据处理不等式（data processing inequality）**：同一数据处理操作不会使两个分布在 KL 意义下变得更加可区分。
+这称为数据处理不等式（data processing inequality）。一个证明方法是对联合分布 $P_X(x)K(y\mid x)$、$Q_X(x)K(y\mid x)$ 使用链式法则：条件转移相同，联合 KL 就等于输入 KL；再边缘化掉 $X$ 即得到结论。
 
-### 7.3 多步生成轨迹的链式法则
+### 5.3 多步轨迹的 KL
 
-对一条轨迹 $x_{0:T}$，假设 $P,Q$ 按时间顺序分解：
-
-$$
-P(x_{0:T})=P(x_0)\prod_{t=1}^T P(x_t\mid x_{<t}),
-$$
-
-$$
-Q(x_{0:T})=Q(x_0)\prod_{t=1}^T Q(x_t\mid x_{<t}).
-$$
-
-其中 $x_{<t}=(x_0,\ldots,x_{t-1})$。反复使用链式法则：
+将链式法则重复应用于 $x_{0:T}=(x_0,\ldots,x_T)$：
 
 $$
 \begin{aligned}
 &D_{\mathrm{KL}}(P(x_{0:T})\|Q(x_{0:T}))\\
 &=D_{\mathrm{KL}}(P(x_0)\|Q(x_0))\\
-&\quad+\sum_{t=1}^T
-\mathbb E_{x_{<t}\sim P}
+&\quad+\sum_{t=1}^{T}
+\mathbb E_{x_{0:t-1}\sim P}
 \left[
 D_{\mathrm{KL}}\left(
-P(x_t\mid x_{<t})\|Q(x_t\mid x_{<t})
+P(x_t\mid x_{0:t-1})
+\|Q(x_t\mid x_{0:t-1})
 \right)
 \right].
 \end{aligned}
 $$
 
-**研究中容易忽略的细节：**这里的每个条件 KL 都是对 $P$ 的前缀分布取期望。若把它随意替换为模型自己生成的前缀分布，就不再是上述 Forward KL 的严格分解。
+这是后面分析**扩散轨迹**和**训练状态分布**的基础。每一步的条件 KL 必须在正确的历史状态分布下取期望，不能任意将 $x_{0:t-1}\sim P$ 改成 $x_{0:t-1}\sim Q$。
 
-## 8. 从 KL 推导 ELBO
+## 6. KL 与变分推断：ELBO
 
-### 8.1 为什么需要引入辅助分布？
+### 6.1 为什么引入潜变量分布？
 
-潜变量生成模型定义联合分布 $p_\theta(x,z)$，但我们通常只观测到 $x$，希望最大化其边缘似然：
-
-$$
-p_\theta(x)=\int p_\theta(x,z)\,dz.
-$$
-
-这个积分可能无法精确计算，因此引入一个可计算的辅助分布 $q_\phi(z\mid x)$，尝试得到 $\log p_\theta(x)$ 的下界。为使下面的 KL 和对数期望有意义，假设 $p_\theta(x)>0$，且 $q_\phi(z\mid x)$ 对真实后验 $p_\theta(z\mid x)$ 绝对连续。
-
-### 8.2 精确恒等式先于下界
-
-根据 Bayes 公式：
+考虑潜变量生成模型 $p_\theta(x,z)$。我们能计算联合密度，但计算边缘似然
 
 $$
-\log p_\theta(z\mid x)
-=\log p_\theta(x,z)-\log p_\theta(x).
+p_\theta(x)=\int p_\theta(x,z)\,dz
 $$
 
-将它代入两个后验分布之间的 KL：
+可能十分困难。于是引入辅助后验 $q_\phi(z\mid x)$，构造可优化的对数似然下界。
+
+为简化记号，以下假设 $p_\theta(x)>0$，并且所出现的 KL 与期望有意义。
+
+### 6.2 从精确恒等式推导 ELBO
+
+由 Bayes 公式，
+
+$$
+p_\theta(z\mid x)=\frac{p_\theta(x,z)}{p_\theta(x)}.
+$$
+
+从辅助后验与真实后验的 KL 出发：
 
 $$
 \begin{aligned}
 &D_{\mathrm{KL}}\left(
 q_\phi(z\mid x)\|p_\theta(z\mid x)
 \right)\\
-&=\mathbb E_{q_\phi}
+&=\mathbb E_{z\sim q_\phi(z\mid x)}
 \left[
 \log q_\phi(z\mid x)-\log p_\theta(z\mid x)
 \right]\\
 &=\log p_\theta(x)
--\mathbb E_{q_\phi}
+-\mathbb E_{z\sim q_\phi(z\mid x)}
 \left[
 \log p_\theta(x,z)-\log q_\phi(z\mid x)
 \right].
 \end{aligned}
 $$
 
-定义
+定义证据下界（evidence lower bound, ELBO）：
 
 $$
 \mathcal E(\theta,\phi;x)
@@ -365,7 +344,7 @@ $$
 \right].
 $$
 
-便得到精确等式：
+于是得到
 
 $$
 \log p_\theta(x)
@@ -377,49 +356,61 @@ q_\phi(z\mid x)\|p_\theta(z\mid x)
 \right).
 $$
 
-因为 KL 非负，所以 $\mathcal E(\theta,\phi;x)\leq\log p_\theta(x)$，即 $\mathcal E$ 是 **evidence lower bound（ELBO）**。这一推导同时揭示了下界的**精确松弛量**：它就是辅助后验与真实后验之间的 KL，而不是一个模糊的近似误差。
+这是**精确恒等式**。由于 KL 非负，
 
-### 8.3 “重建项 − KL”从哪里来？
+$$
+\mathcal E(\theta,\phi;x)\leq\log p_\theta(x).
+$$
 
-若联合模型分解为 $p_\theta(x,z)=p(z)p_\theta(x\mid z)$，则
+更进一步，**下界松弛多少是明确可量化的**：间隙恰好等于 $q_\phi(z\mid x)$ 与真实后验 $p_\theta(z\mid x)$ 的 KL。选择辅助分布的关键并不只是它“容易采样”，还包括它能否近似真实后验。
+
+### 6.3 为什么 VAE 的 ELBO 里有 KL 正则项？
+
+如果联合分布分解为
+
+$$
+p_\theta(x,z)=p(z)p_\theta(x\mid z),
+$$
+
+那么 ELBO 还能写成
 
 $$
 \begin{aligned}
 \mathcal E(\theta,\phi;x)
 &=\mathbb E_{q_\phi(z\mid x)}
-[\log p_\theta(x\mid z)]\\
+\left[\log p_\theta(x\mid z)\right]\\
 &\quad-
-D_{\mathrm{KL}}\left(q_\phi(z\mid x)\|p(z)\right).
+D_{\mathrm{KL}}\left(
+q_\phi(z\mid x)\|p(z)
+\right).
 \end{aligned}
 $$
 
-这是 VAE 中常见的表达式。请不要混淆这里的两个 KL：与**真实后验**的 KL 衡量下界松弛；与**先验**的 KL 是对 ELBO 的一种代数分解。
+这就是常说的“重建项减去 KL 正则项”。但这里的**先验 KL** 与上一小节衡量松弛量的**后验 KL** 是不同的对象：一个比较 $q_\phi$ 与 $p(z)$，另一个比较 $q_\phi$ 与 $p_\theta(z\mid x)$。
 
-也可以用 Jensen 不等式直接得到 ELBO；但从上述精确恒等式推导，更容易看清**下界究竟松在哪里**。
+## 7. 扩散模型中的 KL：为什么损失能够分解到每个时间步？
 
-## 9. 扩散模型为何出现逐时间步 KL？
+### 7.1 前向与反向轨迹
 
-### 9.1 固定的前向过程与学习的反向过程
-
-在标准离散时间扩散模型中，$x_0$ 是数据，前向 Markov 链逐步把它变成 $x_T$：
+标准离散时间扩散模型先定义一个**固定的前向 Markov 链**：
 
 $$
 q(x_{1:T}\mid x_0)
-=\prod_{t=1}^T q(x_t\mid x_{t-1}).
+=\prod_{t=1}^{T}q(x_t\mid x_{t-1}).
 $$
 
-模型则从先验 $p(x_T)$ 开始，沿反向时间生成：
+模型的联合生成分布则定义为
 
 $$
 p_\theta(x_{0:T})
-=p(x_T)\prod_{t=1}^T p_\theta(x_{t-1}\mid x_t).
+=p(x_T)\prod_{t=1}^{T}p_\theta(x_{t-1}\mid x_t).
 $$
 
-这里 $q$ 是预先定义的加噪机制，$p_\theta$ 才是待学习的反向模型。
+其中 $x_0$ 是数据，$x_T$ 通常接近一个简单的先验；$q$ 是前向噪声机制，$p_\theta$ 是需要学习的反向过程。
 
-### 9.2 从 ELBO 得到变分训练损失
+### 7.2 先建立整条轨迹的变分目标
 
-固定观测 $x_0$，将前向轨迹 $q(x_{1:T}\mid x_0)$ 作为辅助分布。第 8 节的 ELBO 立即给出：
+固定一个观测 $x_0$，以 $q(x_{1:T}\mid x_0)$ 作为第 6 节的辅助后验：
 
 $$
 \begin{aligned}
@@ -427,23 +418,27 @@ $$
 &\leq
 \mathbb E_{q(x_{1:T}\mid x_0)}
 \left[
-\log\frac{q(x_{1:T}\mid x_0)}{p_\theta(x_{0:T})}
+\log\frac{q(x_{1:T}\mid x_0)}
+{p_\theta(x_{0:T})}
 \right]\\
 &=:\mathcal L_{\mathrm{VLB}}(x_0).
 \end{aligned}
 $$
 
-这里 $\mathcal L_{\mathrm{VLB}}$ 是**负对数似然的上界**；等价地，$-\mathcal L_{\mathrm{VLB}}$ 是对数似然的下界。
+需要区分符号：**ELBO 是 $\log p_\theta(x_0)$ 的下界，而 $\mathcal L_{\mathrm{VLB}}$ 是其负号，即负对数似然的上界**。
 
-前向 Markov 链可以重新分解为
+### 7.3 再利用 Markov 结构分解
+
+尽管 $q$ 是按正向时间定义的，它也可以重新写成
 
 $$
 q(x_{1:T}\mid x_0)
-=q(x_T\mid x_0)
-\prod_{t=2}^T q(x_{t-1}\mid x_t,x_0).
+=
+q(x_T\mid x_0)
+\prod_{t=2}^{T}q(x_{t-1}\mid x_t,x_0).
 $$
 
-其中出现的“反向后验”可以从已知前向过程计算：
+这里出现的后验并非额外假设，它可以由前向转移直接得到：
 
 $$
 q(x_{t-1}\mid x_t,x_0)
@@ -455,14 +450,15 @@ q(x_t\mid x_0)
 }.
 $$
 
-把两个轨迹分解代入上界，并对对数乘积逐项整理，得到
+将前向、反向轨迹的分解代入 $\mathcal L_{\mathrm{VLB}}$，把乘积变为对数的求和，再依 KL 的定义整理：
 
 $$
 \begin{aligned}
 \mathcal L_{\mathrm{VLB}}(x_0)
-&=
-D_{\mathrm{KL}}\left(q(x_T\mid x_0)\|p(x_T)\right)\\
-&\quad+\sum_{t=2}^T
+&=D_{\mathrm{KL}}\left(
+q(x_T\mid x_0)\|p(x_T)
+\right)\\
+&\quad+\sum_{t=2}^{T}
 \mathbb E_{x_t\sim q(x_t\mid x_0)}
 \left[
 D_{\mathrm{KL}}\left(
@@ -475,115 +471,65 @@ q(x_{t-1}\mid x_t,x_0)
 \end{aligned}
 $$
 
-这就是**先验匹配项 + 逐时间步反向 KL 项 + 重建项**的来源。如果先验和前向过程固定，第一项本身不依赖待训练的反向参数 $\theta$。
+三项分别对应**先验匹配、逐步反向转移拟合、最后一步重建**。这条推导的逻辑是：**先定义联合生成模型并构造整体变分界，再由轨迹的概率分解得到逐步 KL**，不是预先人为选择逐步 KL 作为训练目标。
 
-核心逻辑是：先对**整条轨迹**构造 ELBO，然后利用 Markov 结构和 KL 链式分解获得逐步目标。逐步 KL 并不是凭直觉独立拼接出来的。
+对于 masked diffusion，同样需要指定具体遮罩转移和反向参数化，才能判断哪些 KL 项可以化为加权交叉熵。**交叉熵形状的 loss 并不自动意味着它是某个 ELBO。**
 
-### 9.3 对 Masked Diffusion 的启示
+## 8. KL 与可编辑生成过程
 
-Masked diffusion 同样从明确的前向遮罩过程出发，因此能够讨论相应的后验和变分目标。在特定转移结构、参数化与时间权重下，相关损失可进一步化为加权交叉熵。
+### 8.1 最终样本与生成轨迹不是同一个随机变量
 
-但**一个 loss 写成交叉熵，不代表它自动就是某个 ELBO**。要建立这种结论，必须给出联合生成模型、辅助路径分布，并证明损失与其变分目标之间的关系。
-
-## 10. 序列生成与可编辑轨迹：两个不能混淆的目标
-
-### 10.1 自回归训练中的条件 KL
-
-如果真实序列分布为 $P(x_{1:T})$，模型为 $Q_\theta(x_{1:T})$，那么链式法则给出
-
-$$
-\begin{aligned}
-&D_{\mathrm{KL}}(P(x_{1:T})\|Q_\theta(x_{1:T}))\\
-&=\sum_{t=1}^T
-\mathbb E_{x_{<t}\sim P}
-\left[
-D_{\mathrm{KL}}\left(
-P(x_t\mid x_{<t})
-\|Q_\theta(x_t\mid x_{<t})
-\right)
-\right].
-\end{aligned}
-$$
-
-所以，基于真实前缀的 teacher-forcing 最大似然训练确实对应总体 Forward KL 的一个精确分解（忽略有限样本估计误差）。但这并不意味着训练时的真实前缀分布与推理时的模型前缀分布相同。
-
-### 10.2 最终输出分布不等于生成轨迹分布
-
-对能够修改已生成位置的模型，设完整轨迹为 $\tau$，最终输出为 $x=f(\tau)$。模型给出轨迹分布 $p_\theta(\tau)$，于是输出分布为
+对于能够反复修改状态的模型，设 $\tau=(s_0,a_0,\ldots,s_T)$ 表示完整生成轨迹，最终输出由 $x=f(\tau)$ 给出。轨迹分布 $p_\theta(\tau)$ 诱导出输出分布
 
 $$
 p_\theta(x)
 =
-\sum_{\tau:\,f(\tau)=x}p_\theta(\tau).
+\sum_{\tau:f(\tau)=x}p_\theta(\tau),
 $$
 
-对**最终输出**建模，目标可能是 $\max_\theta\log p_\theta(x)$；对**完整轨迹**建模，目标可能是匹配某个参考轨迹分布。这是两个不同问题。
+这里写的是离散轨迹情形；连续情形将求和换为相应积分。
 
-因为最终输出是轨迹的一个映射，数据处理不等式表明
+由于 $x=f(\tau)$ 是对轨迹的确定映射，数据处理不等式说明
 
 $$
 D_{\mathrm{KL}}(P(\tau)\|Q(\tau))
 \geq D_{\mathrm{KL}}(P(x)\|Q(x)).
 $$
 
-因此，轨迹分布匹配是一种通常更强的要求；最终分布匹配并不自动保证中间修改过程相同。
+因此，**要求两个模型的完整轨迹匹配，通常比仅要求最终输出分布匹配更强**。不同轨迹完全可能得到同一个最终结果。
 
-### 10.3 没有前向加噪，也能形式上写出 ELBO 吗？
+### 8.2 没有预先设定的前向过程，仍能构造 ELBO 吗？
 
-**可以，但写出下界不等于得到了有用的训练目标。** 只要模型定义了完整轨迹概率 $p_\theta(\tau)$，并引入一个只支持 $f(\tau)=x$ 的辅助分布 $r_\phi(\tau\mid x)$，就可以得到
+如果模型定义了规范化的轨迹概率 $p_\theta(\tau)$，答案是可以。给定目标输出 $x$，引入一个**仅支持 $f(\tau)=x$ 的辅助轨迹分布** $r_\phi(\tau\mid x)$。由第 6 节同样的后验 KL 恒等式，
 
 $$
 \begin{aligned}
 \log p_\theta(x)
-&\geq
-\mathbb E_{\tau\sim r_\phi(\tau\mid x)}
-\left[
-\log p_\theta(\tau)-\log r_\phi(\tau\mid x)
-\right].
+&=\mathbb E_{\tau\sim r_\phi(\tau\mid x)}
+\left[\log p_\theta(\tau)-\log r_\phi(\tau\mid x)\right]\\
+&\quad+
+D_{\mathrm{KL}}\left(
+r_\phi(\tau\mid x)\|p_\theta(\tau\mid x)
+\right).
 \end{aligned}
 $$
 
-相应的精确间隙为
+第一项因此是最终对数似然的下界。**构造一个形式上的 ELBO 不需要预先存在扩散式前向加噪过程**；真正的问题在于：如何选择可计算且足够紧的 $r_\phi$，以及如何评价轨迹空间过多的自由度。
 
-$$
-D_{\mathrm{KL}}\left(
-r_\phi(\tau\mid x)\|
-p_\theta(\tau\mid x)
-\right).
-$$
+### 8.3 训练状态分布与目标函数需要分别说明
 
-这里的 $r_\phi$ **不需要来自预先设定的前向加噪过程**。真正困难的是：如何定义或近似这个辅助路径分布，使下界既可计算、又足够紧，同时让训练采样的状态与模型实际生成时遇到的状态一致。
+在多步模型中，训练可以使用某个参考过程提供的状态，也可以使用模型当前策略生成的状态。两者对应不同的状态分布，因此即使使用相同的逐步监督损失，优化目标也可能不同。
 
-这也说明，在讨论可编辑生成过程的新 loss 时，应该先回答：**目标是最终输出的对数似然、一个有明确松弛量的变分下界，还是人为选择的逐步替代损失？** 三者不能仅凭形式相似就视为等价。
+采用 on-policy 状态采样能够减少**训练状态与实际推理状态的分布差异**，但这并不自动意味着相应损失就是最终输出负对数似然的无偏估计，也不保证它具有紧致的变分界。
 
-## 11. 核心结论与阅读路线
+分析一项可编辑生成训练方法时，应把三个问题分开：
 
-从上面的推导可以抽取出四条关系：
+1. **概率模型：**最终输出 $p_\theta(x)$ 如何由轨迹定义？
+2. **目标函数：**优化的是精确对数似然、明确的变分下界，还是逐步替代损失？
+3. **采样分布：**损失的期望在哪一种中间状态分布上计算？
 
-**对数损失：** KL 是用 $Q$ 预测真实分布 $P$ 时，相对于用 $P$ 预测的平均额外对数损失。
+只有把这些对象明确区分，才能严格讨论训练—推理一致性与目标函数的关系。
 
-$$
-D_{\mathrm{KL}}(P\|Q)=H(P,Q)-H(P).
-$$
+---
 
-**最大似然：** 在真实数据分布固定时，最大化期望对数似然等价于最小化 Forward KL。
-
-$$
-\max_\theta\mathbb E_{p_{\mathrm{data}}}\log p_\theta(x)
-\;\Longleftrightarrow\;
-\min_\theta D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta).
-$$
-
-**链式法则：** 联合分布的 KL 可以精确分解为边缘 KL 和条件 KL，但条件 KL 的期望必须使用第一个分布。
-
-**变分推断：** ELBO 与对数似然的差距是一个明确定义的后验 KL：
-
-$$
-\log p_\theta(x)-\mathrm{ELBO}
-=
-D_{\mathrm{KL}}\left(q_\phi(z\mid x)\|p_\theta(z\mid x)\right).
-$$
-
-建议理解顺序：先掌握第 1–5 节中的概率预测与对数似然，再看第 6–7 节中的优化方向和链式法则，最后用第 8–10 节理解变分目标、扩散训练与可编辑生成过程。
-
-更形式化的 KL 性质及原有证明见 [Properties of KL Divergence](https://egnarochan.github.io/Egnaro/properties_of_kl_divergence.html)。返回 [文章列表](https://egnarochan.github.io/Egnaro/index.html)。
+与本文相关的 KL 严格性质和进一步证明可参阅 [Properties of KL Divergence](https://egnarochan.github.io/Egnaro/properties_of_kl_divergence.html)。
