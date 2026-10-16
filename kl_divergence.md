@@ -621,13 +621,13 @@ $$
 
 对于未遮罩的位置，如果真实后验与模型转移都保持该 token，条件 KL 为零。当各位置的反向转移在给定 $x_t$ 时条件独立，整个时间步的条件 KL 就是这些位置级 KL 之和：
 
-$
+$$
 D_{\mathrm{KL}}\bigl(
 q(x_{t-1}\mid x_t,x_0)
 \|p_\theta(x_{t-1}\mid x_t)
 \bigr)
 =c_t\sum_{i:x_t^i=m}\bigl[-\log\hat p_\theta(x_0^i\mid x_t)\bigr].
-$
+$$
 
 进一步在 $q(x_t\mid x_0)$ 下取期望，便得到第 7.3 节 ELBO 中对应时间步的训练项。
 
