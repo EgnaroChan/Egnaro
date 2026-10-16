@@ -409,7 +409,7 @@ $$
 \log p_\theta(x)=\log\int p_\theta(x,z)\,dz,
 $$
 
-但边缘积分可能难以计算。引入辅助分布 $q_\phi(z\mid x)$，假设相关比值和期望有定义。将它乘入积分再除去：
+但边缘积分可能难以计算。引入辅助分布 $q_\phi(z\mid x)$。为保证以下等式成立，假设对固定 $x$，在 $p_\theta(x,z)>0$ 的地方 $q_\phi(z\mid x)>0$，且相关期望有定义。将 $q_\phi$ 乘入积分再除去：
 
 $$
 \begin{aligned}
@@ -618,6 +618,18 @@ q(x_{t-1}^i\mid x_t^i=m,x_0)
 &=c_t\bigl[-\log\hat p_\theta(x_0^i\mid x_t)\bigr].
 \end{aligned}
 $$
+
+对于未遮罩的位置，如果真实后验与模型转移都保持该 token，条件 KL 为零。当各位置的反向转移在给定 $x_t$ 时条件独立，整个时间步的条件 KL 就是这些位置级 KL 之和：
+
+$
+D_{\mathrm{KL}}\bigl(
+q(x_{t-1}\mid x_t,x_0)
+\|p_\theta(x_{t-1}\mid x_t)
+\bigr)
+=c_t\sum_{i:x_t^i=m}\bigl[-\log\hat p_\theta(x_0^i\mid x_t)\bigr].
+$
+
+进一步在 $q(x_t\mid x_0)$ 下取期望，便得到第 7.3 节 ELBO 中对应时间步的训练项。
 
 这就是**带时间权重的 token 交叉熵**。在这个特定模型中，交叉熵由已知的前向后验和反向参数化推导得到；更换噪声过程或允许反向步骤编辑已有 token 后，需要重新检查是否仍有同样的等式。
 
