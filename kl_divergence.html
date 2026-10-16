@@ -222,14 +222,34 @@ D_{\mathrm{KL}}(P\|Q)
 
 <h3>3.2 为什么最大似然对应 Forward KL？</h3>
 
-<p>令 \(p_{\mathrm{data}}\) 为真实数据分布，\(p_\theta\) 为参数化模型。由上一节的恒等式，\(H(p_{\mathrm{data}})\) 不依赖 \(\theta\)，因此</p>
+<p>设 \(p_{\mathrm{data}}(x)\) 为真实数据分布，\(p_\theta(x)\) 为参数为 \(\theta\) 的模型分布。我们希望通过调整 \(\theta\)，使模型分布接近真实分布。根据 KL 的定义，</p>
 
 \[
-\arg\min_\theta D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta)
-=
-\arg\max_\theta
-\mathbb E_{x\sim p_{\mathrm{data}}}\log p_\theta(x).
+\begin{aligned}
+D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta)
+&amp;=\mathbb E_{x\sim p_{\mathrm{data}}}
+\left[\log\frac{p_{\mathrm{data}}(x)}{p_\theta(x)}\right]\\
+&amp;=\mathbb E_{x\sim p_{\mathrm{data}}}\log p_{\mathrm{data}}(x)
+-\mathbb E_{x\sim p_{\mathrm{data}}}\log p_\theta(x)\\
+&amp;=-H(p_{\mathrm{data}})
+-\mathbb E_{x\sim p_{\mathrm{data}}}\log p_\theta(x).
+\end{aligned}
 \]
+
+<p>这里 \(p_{\mathrm{data}}\) 是固定的真实分布，不随参数 \(\theta\) 改变，因此 \(H(p_{\mathrm{data}})\) 对 \(\theta\) 来说是常数。最小化 KL 时，可以忽略这个常数项：</p>
+
+\[
+\begin{aligned}
+\arg\min_\theta D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta)
+&amp;=\arg\min_\theta\left[
+-\mathbb E_{x\sim p_{\mathrm{data}}}\log p_\theta(x)
+\right]\\
+&amp;=\arg\max_\theta
+\mathbb E_{x\sim p_{\mathrm{data}}}\log p_\theta(x).
+\end{aligned}
+\]
+
+<p>也就是说，<strong>最小化真实分布到模型分布的 Forward KL，等价于最大化模型在真实数据上的平均对数概率</strong>。这里的期望始终是对 \(p_{\mathrm{data}}\) 计算的，而不是对模型分布 \(p_\theta\) 计算。</p>
 
 <p>但真实分布 \(p_{\mathrm{data}}\) 未知，右侧的期望无法直接计算。实际训练时，我们只有从它独立同分布采样得到的数据集 \(\mathcal D=\{x^{(1)},\ldots,x^{(N)}\}\)。</p>
 
