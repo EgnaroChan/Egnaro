@@ -160,63 +160,52 @@ $$
 
 也就是说，**最小化真实分布到模型分布的 Forward KL，等价于最大化模型在真实数据上的平均对数概率**。这里的期望始终是对 $p_{\mathrm{data}}$ 计算的，而不是对模型分布 $p_\theta$ 计算。
 
-但真实分布 $p_{\mathrm{data}}$ 未知，右侧的期望无法直接计算。实际训练时，我们只有从它独立同分布采样得到的数据集 $\mathcal D=\{x^{(1)},\ldots,x^{(N)}\}$。
-
-**首先看最大似然估计（MLE）本身的定义。** 在模型 $p_\theta$ 下，整批独立样本的联合似然是
+前面的等式给出了一个理想目标：让模型在真实数据分布下的平均对数概率尽可能大。但我们并不知道 $p_{\mathrm{data}}$ 的具体形式，因此无法直接计算这个期望。实际拥有的是从真实分布中独立抽取的 $N$ 个训练样本：
 
 $$
-\mathcal{L}(\theta;\mathcal D)
+\mathcal D=\{x^{(1)},x^{(2)},\ldots,x^{(N)}\}.
+$$
+
+**第一步：用样本平均代替总体期望。** 既然每个训练样本都来自 $p_{\mathrm{data}}$，就可以用模型在这些样本上的平均对数概率，估计它在真实分布下的期望对数概率：
+
+$$
+\mathbb E_{x\sim p_{\mathrm{data}}}\log p_\theta(x)
+\;\approx\;
+\frac1N\sum_{i=1}^{N}\log p_\theta(x^{(i)}).
+$$
+
+于是，训练时最大化右侧即可。通常把它乘以 $-1$，写成最小化的形式，这就得到**平均负对数似然（NLL）损失**：
+
+$$
+\mathcal L_{\mathrm{NLL}}(\theta)
+=-\frac1N\sum_{i=1}^{N}\log p_\theta(x^{(i)}).
+$$
+
+对某个训练样本，模型给它的概率（连续情形下为概率密度）越高，$-\log p_\theta(x^{(i)})$ 就越小。因此最小化 NLL，就是让模型尽可能提高训练数据的对数概率。
+
+**第二步：为什么这叫最大似然估计（MLE）？** 如果训练样本相互独立，模型在参数 $\theta$ 下给整批数据的联合似然是
+
+$$
+p_\theta(\mathcal D)
 =\prod_{i=1}^{N}p_\theta(x^{(i)}).
 $$
 
-MLE 选择使这批数据似然最大的参数。由于对数函数严格递增，最大化似然等价于最大化对数似然；取负号并除以样本数，又等价于最小化**平均负对数似然（NLL）**：
+所谓**最大似然估计**，就是选择使这个乘积最大的参数。由于对数函数严格递增，最大化乘积等价于最大化对数之和；再乘以负数、除以 $N$，就变成最小化刚才的 NLL：
 
 $$
 \begin{aligned}
 \hat\theta_{\mathrm{MLE}}
-&=\arg\max_\theta
-\sum_{i=1}^{N}\log p_\theta(x^{(i)})\\
-&=\arg\min_\theta
-\underbrace{\left(
--\frac{1}{N}\sum_{i=1}^{N}\log p_\theta(x^{(i)})
-\right)}_{\mathcal{L}_{\mathrm{NLL}}(\theta)}.
+&=\arg\max_\theta\prod_{i=1}^{N}p_\theta(x^{(i)})\\
+&=\arg\max_\theta\sum_{i=1}^{N}\log p_\theta(x^{(i)})\\
+&=\arg\min_\theta\mathcal L_{\mathrm{NLL}}(\theta).
 \end{aligned}
 $$
 
-这里的 $1/N$ 只把总损失改为平均损失，不改变最优参数。
+因此，**最大似然估计（MLE）和最小化训练集 NLL 是完全等价的两种写法**。
 
-**接下来连接 MLE 与 KL。** 对固定的 $\theta$，如果负对数似然可积，根据大数定律，
+**最后，把它与 Forward KL 联系起来：** 理想情况下，我们希望最小化 $D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta)$；但真实分布未知，所以实际训练通过样本 NLL 来估计相应的总体优化目标。两者**不是在有限数据集上严格相等**：样本平均可能与真实期望有偏差；在常见的独立同分布及可积条件下，随着样本数增多，对固定模型参数的样本平均会趋近真实期望。
 
-$$
-\mathcal{L}_{\mathrm{NLL}}(\theta)
-\xrightarrow[N\to\infty]{\mathrm{a.s.}}
-\mathbb E_{x\sim p_{\mathrm{data}}}[-\log p_\theta(x)]
-=
-H(p_{\mathrm{data}},p_\theta).
-$$
-
-而交叉熵满足
-
-$$
-H(p_{\mathrm{data}},p_\theta)
-=
-H(p_{\mathrm{data}})
-+
-D_{\mathrm{KL}}(p_{\mathrm{data}}\|p_\theta).
-$$
-
-因此，**样本 NLL 是总体交叉熵的经验估计，而总体交叉熵与 Forward KL 只差一个不依赖 $\theta$ 的常数**。这才是 MLE 与最小化 Forward KL 的关系：它们的总体优化目标等价，但有限样本下的最优参数未必等于总体最优参数。
-
-**分类任务中的交叉熵也是同一个形式。** 对带标签样本 $(x^{(i)},y^{(i)})$，模型预测条件概率 $p_\theta(y\mid x)$。将观测标签 $y^{(i)}$ 表示为 one-hot 向量，单个样本的交叉熵为
-
-$$
--\sum_{k=1}^{K}\mathbf{1}[y^{(i)}=k]
-\log p_\theta(k\mid x^{(i)})
-=
--\log p_\theta(y^{(i)}\mid x^{(i)}).
-$$
-
-这里 one-hot 表示的是**观测标签**，并不要求真实条件分布 $p_{\mathrm{data}}(y\mid x)$ 本身一定是 one-hot。
+在分类任务中，模型预测的是条件概率 $p_\theta(y\mid x)$。用同样的思路，对每个带标签样本计算 $-\log p_\theta(y\mid x)$，得到常见的分类交叉熵损失。
 
 ## 4. Forward KL 与 Reverse KL
 
