@@ -232,60 +232,126 @@ Reverse KL 则在模型分布 $Q_\theta$ 下取期望。如果 $Q_\theta(x)>0$�
 
 ### 4.2 单高斯拟合双峰分布
 
-考虑一个双峰目标分布
+为了比较两种 KL 的优化结果，考虑一个**目标分布有两个峰、模型却只能表示一个峰**的例子。
+
+目标分布是两个高斯的等权混合：
 
 $$
 P(x)=\frac12\mathcal N(x;-a,s^2)
-+\frac12\mathcal N(x;a,s^2),\qquad a>0,
++\frac12\mathcal N(x;a,s^2),\qquad a,s>0.
 $$
 
-但模型只能表示单个高斯 $Q_{\mu,v}(x)=\mathcal N(x;\mu,v)$，其中 $v>0$。
-
-从 Forward KL 出发，将高斯的对数密度代入，
+它的两个峰位于 $-a$ 和 $a$ 附近，每个分量的方差为 $s^2$。我们限制模型只能使用**单个高斯分布**
 
 $$
-\begin{aligned}
+Q_{\mu,v}(x)=\mathcal N(x;\mu,v),\qquad v>0,
+$$
+
+其中均值 $\mu$、方差 $v$ 都可以训练。由于 $Q_{\mu,v}$ 只有一个峰，无法精确表示两峰相距较远的 $P$，因此两种 KL 方向可能选择不同的折中方案。
+
+**（1）最小化 Forward KL。**
+
+根据第 3 节的恒等式，
+
+$$
 D_{\mathrm{KL}}(P\|Q_{\mu,v})
-&=-H(P)-\mathbb E_{x\sim P}\log Q_{\mu,v}(x)\\
-&=-H(P)+\frac12\log(2\pi v)
-+\frac{\mathbb E_P[(x-\mu)^2]}{2v}.
-\end{aligned}
+=-H(P)-\mathbb E_{x\sim P}\log Q_{\mu,v}(x).
 $$
 
-由于 $\mathbb E_P[x]=0$、$\operatorname{Var}_P(x)=a^2+s^2$，以及
+其中 $H(P)$ 与模型参数 $\mu,v$ 无关。把高斯密度的对数形式
 
 $$
-\mathbb E_P[(x-\mu)^2]
-=\operatorname{Var}_P(x)+(\mathbb E_P[x]-\mu)^2,
+\log Q_{\mu,v}(x)
+=-\frac12\log(2\pi v)-\frac{(x-\mu)^2}{2v}
 $$
 
-可以得到
+代入后，有
 
 $$
 D_{\mathrm{KL}}(P\|Q_{\mu,v})
 =\text{const}+\frac12\log v
-+\frac{a^2+s^2+\mu^2}{2v},
++\frac{\mathbb E_P[(x-\mu)^2]}{2v},
 $$
 
-其中常数项与 $\mu,v$ 无关。分别对 $\mu$ 和 $v$ 求极小值：
+这里 $\text{const}$ 不依赖 $\mu,v$。由于 $P$ 的两个分量权重相同，
 
 $$
-\mu^*=0,\qquad v^*=a^2+s^2.
+\mathbb E_P[x]=0,\qquad
+\operatorname{Var}_P(x)=a^2+s^2.
 $$
 
-当两峰相隔很远时，单高斯会取位于两峰之间、方差较大的解。这是 Forward KL 常见的 *mode-covering* 行为。
+因此
 
-而 Reverse KL 的目标是
+$$
+\mathbb E_P[(x-\mu)^2]
+=\operatorname{Var}_P(x)+(\mathbb E_P[x]-\mu)^2
+=a^2+s^2+\mu^2.
+$$
+
+代回目标函数：
+
+$$
+D_{\mathrm{KL}}(P\|Q_{\mu,v})
+=\text{const}+\frac12\log v
++\frac{a^2+s^2+\mu^2}{2v}.
+$$
+
+对 $\mu$ 求极小值先得到 $\mu^*=0$；再对 $v$ 求导并令其为零：
+
+$$
+\frac{1}{2v}-\frac{a^2+s^2}{2v^2}=0
+\quad\Longrightarrow\quad
+v^*=a^2+s^2.
+$$
+
+所以 Forward KL 的最优单高斯是
+
+$$
+\boxed{Q_{\mathrm{forward}}=\mathcal N(0,a^2+s^2).}
+$$
+
+**含义：**模型的均值位于两峰中间，方差随着峰间距离 $2a$ 增大而增大。它用一个较宽的分布覆盖两侧的数据，这就是这里的 *mode-covering*。
+
+**（2）最小化 Reverse KL。**
+
+交换 KL 的方向后，目标变为
 
 $$
 D_{\mathrm{KL}}(Q_{\mu,v}\|P)
-=\mathbb E_{Q_{\mu,v}}\log Q_{\mu,v}(x)
--\mathbb E_{Q_{\mu,v}}\log P(x).
+=\mathbb E_{x\sim Q_{\mu,v}}
+\left[\log Q_{\mu,v}(x)-\log P(x)\right].
 $$
 
-若模型把较多概率分给目标密度很低的两峰之间的区域，第二项就会带来惩罚。因此，在峰间距离很大且只能使用单峰模型时，较优解往往偏向其中一个峰，表现出 *mode-seeking*。这里并不存在与 Forward KL 相同的矩匹配结论。
+与刚才不同，现在**期望是对模型 $Q_{\mu,v}$ 计算的**。如果模型在两峰之间生成大量样本，而目标分布 $P$ 在那里密度很低，那么 $-\log P(x)$ 就会较大，使 Reverse KL 受到惩罚。
 
-**mode-covering 和 mode-seeking 是模型族受限时的典型现象，不是关于 KL 的无条件定理。** 当 $Q_\theta$ 能够精确等于 $P$ 时，两种方向都在 $Q_\theta=P$ 处取得最小值 $0$。
+这里 $P$ 是两个高斯的混合，$\log P(x)$ 包含对两个高斯密度之和取对数，不能像 Forward KL 一样直接化成关于 $\mu,v$ 的简单二次式。我们用同一组参数比较两个具体候选模型。
+
+取 $a=4$、$s=1$，则
+
+$$
+P(x)=\frac12\mathcal N(x;-4,1)
++\frac12\mathcal N(x;4,1).
+$$
+
+考虑下面两种选择：
+
+- **覆盖两峰：**$Q_{\mathrm{cover}}=\mathcal N(0,17)$，即上面求得的 Forward KL 最优解。
+- **集中一峰：**$Q_{\mathrm{peak}}=\mathcal N(4,1)$，只拟合右侧的一个峰。
+
+用 Reverse KL 的定义进行一维数值积分，得到
+
+$$
+\begin{aligned}
+D_{\mathrm{KL}}(Q_{\mathrm{cover}}\|P)&\approx 2.098,\\
+D_{\mathrm{KL}}(Q_{\mathrm{peak}}\|P)&\approx 0.693.
+\end{aligned}
+$$
+
+因此，对这个例子，**只覆盖其中一个峰的候选模型，反而具有更小的 Reverse KL**。原因不是它更准确地描述了整个目标分布，而是它避免了在两峰之间的低密度区域生成大量样本。由于目标分布对称，集中在左峰也具有相同的 Reverse KL。
+
+这就是 *mode-seeking* 的含义。上述比较说明两个候选方案的优劣，并非对 Reverse KL 全局最优解的证明。
+
+**结论：**Forward KL 在目标分布 $P$ 下计算期望，倾向避免遗漏真实数据所在的峰；Reverse KL 在模型分布 $Q$ 下计算期望，倾向避免模型在目标低密度区域生成样本。*Mode-covering* 与 *mode-seeking* 是这个**模型表达能力受限**的例子所展示的行为，并不是两种 KL 在所有模型族中的必然结论。若模型可以精确表示 $P$，两种方向的最小值都在 $Q=P$ 时达到 $0$。
 
 ## 5. KL 的链式法则与数据处理不等式
 
